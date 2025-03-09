@@ -1,3 +1,4 @@
+import polylogo from "./assets/poly-logo.webp"
 
 const LandingPage = () => {
 
@@ -13,7 +14,7 @@ const LandingPage = () => {
                     <div className="flex justify-between items-center py-4">
                         <div className="flex items-center space-x-3">
                             {/* Replace with your logo image if available */}
-                            <img src="/assets/floridapoly_markonlylogo_rgb_fc.jpg" alt="Logo" className="h-8 w-8" />
+                            <img src={polylogo} className="h-15 w-15"  alt="logo"/>
                             <span className="text-xl font-bold text-purple-600">
                 PolyMart
               </span>

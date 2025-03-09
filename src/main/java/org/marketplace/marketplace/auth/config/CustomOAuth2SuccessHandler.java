@@ -5,6 +5,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.marketplace.marketplace.entities.Role;
 import org.marketplace.marketplace.repository.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,7 +16,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.marketplace.marketplace.entities.User;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -30,16 +33,34 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 		OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
 		String email = oauth2User.getAttribute("email"); // Use the email as the username
 
-		System.out.println(oauth2User);
+		System.out.println(email);
+		String name =  oauth2User.getAttribute("name");
+		assert name != null;
+		String[] lastfirst = name.split(",");
+		System.out.println(lastfirst[0]);
+		System.out.println(lastfirst[1].substring(1));
+		name = lastfirst[1].substring(1) + " " + lastfirst[0];
 
-//		User existingUser = userRepository.findUserByEmail(email).orElse(null);
+
+
+		System.out.println();
+
+		User existingUser = userRepository.findUserByEmail(email).orElse(null);
+
+		if (existingUser == null) {
+			User user = User.builder()
+					.email(email)
+					.name(name)
+					.role(Role.USER)
+					.build();
+			userRepository.save(user);
+			existingUser = user;
+		}
+
+		redirectToDashboard(response, existingUser);
 
 
 
-//		if (existingUser == null) {
-//			redirectToSignUp();
-//		}
-//
 //
 //		String jwtToken = jwtService.generateToken(existingUser);
 //
@@ -54,23 +75,16 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 //		response.sendRedirect("/home?token=" + jwtToken);
 	}
 
-//	private void redirectToSignUp(HttpServletResponse response, String registrationId, String userId) throws IOException {
-//		String redirectURL = UriComponentsBuilder.fromUriString("http://localhost:5173/signUp")
-//				.queryParam(registrationId + "ID", userId)
-//				.build()
-//				.toUriString();
-//		response.sendRedirect(redirectURL);
-//	}
-//
-//	private void redirectToDashboard(HttpServletResponse response, User user) throws IOException {
-//		String jwtToken = jwtService.generateToken(user);
-//		String redirectUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/dashboard")
-//				.queryParam("userId", user.getID())
-//				.queryParam("token", jwtToken)
-//				.build()
-//				.toUriString();
-//		response.sendRedirect(redirectUrl);
-//	}
+
+	private void redirectToDashboard(HttpServletResponse response, User user) throws IOException {
+		String jwtToken = jwtService.generateToken(user);
+		String redirectUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/home")
+				.queryParam("userId", user.getID())
+				.queryParam("token", jwtToken)
+				.build()
+				.toUriString();
+		response.sendRedirect(redirectUrl);
+	}
 
 }
 
