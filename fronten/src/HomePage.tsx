@@ -1,227 +1,290 @@
-import React from 'react';
-import polylogo from "./assets/poly-logo.webp"
-
+import {useNavigate} from "react-router-dom";
+import polylogo from "./assets/poly-logo.webp";
+import {AppBar, Box, Button, Grid, InputBase, Paper, Toolbar, Typography,} from "@mui/material";
 
 const HomePage = () => {
+    const navigate = useNavigate();
+
     return (
-        <div className="w-screen">
-            {/* Fixed Navigation Bar */}
-            <header className="bg-white shadow fixed top-0 left-0 w-screen z-40">
-                <div className="w-screen px-4 sm:px-6 lg:px-8 flex items-center justify-between py-3">
-                    <div className="flex items-center space-x-3">
-                        <img src={polylogo} alt="Logo" className="h-15 w-15" />
-                        <span className="text-xl font-bold text-purple-600">
-              PolyMart
-            </span>
-                    </div>
-                    <div className="flex-1 mx-8 flex items-center">
-                        <div className="inline-flex w-full">
-                            <input
-                                type="text"
+        <Box sx={{display: "flex", flexDirection: "column", minHeight: "100vh"}}>
+            {/* Navigation Bar */}
+            <AppBar
+                position="fixed"
+                sx={{
+                    backgroundColor: "#fff",
+                    boxShadow: 1,
+                    zIndex: (theme) => theme.zIndex.drawer + 1,
+                }}
+            >
+                <Toolbar sx={{justifyContent: "space-between"}}>
+                    <Box sx={{display: "flex", alignItems: "center"}}>
+                        <Box
+                            component="img"
+                            src={polylogo}
+                            alt="Logo"
+                            sx={{height: 60, width: 60, mr: 1}}
+                        />
+                        <Typography variant="h6" sx={{fontWeight: 600, color: "#6b46c1"}}>
+                            PolyMart
+                        </Typography>
+                    </Box>
+                    <Box sx={{flexGrow: 1, mx: 4}}>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                backgroundColor: "#f0f0f0",
+                                borderRadius: "50px",
+                                overflow: "hidden",
+                            }}
+                        >
+                            <InputBase
                                 placeholder="Search for items..."
-                                className="flex-grow px-4 py-2 border border-gray-300 text-black rounded-l-full focus:outline-none focus:ring-2 focus:ring-purple-600"
+                                sx={{flexGrow: 1, px: 2, py: 1, fontWeight: 600}}
                             />
-                            <button
-                                className="ml-2 px-4 py-2 bg-purple-600 text-white rounded-l-full hover:bg-purple-700 transition"
+                            <Button
+                                variant="contained"
+                                sx={{
+                                    backgroundColor: "#6b46c1",
+                                    borderRadius: "50px",
+                                    textTransform: "none",
+                                    mr: 1,
+                                    fontWeight: 600,
+                                }}
                             >
                                 Search
-                            </button>
-                        </div>
-                    </div>
+                            </Button>
+                        </Box>
+                    </Box>
+                    <Box sx={{display: {xs: "none", md: "flex"}, gap: 2}}>
+                        {[
+                            {label: "Home", path: "/home"},
+                            {label: "My Listings", path: "/myselling"},
+                            {label: "Messages", path: "#"},
+                            {label: "Profile", path: "#"},
+                        ].map((item) => (
+                            <Button
+                                key={item.label}
+                                onClick={() => navigate(item.path)}
+                                sx={{color: "#4a5568", textTransform: "none", fontWeight: 600}}
+                            >
+                                {item.label}
+                            </Button>
+                        ))}
+                    </Box>
+                </Toolbar>
+            </AppBar>
 
-
-                    <nav className="hidden md:flex space-x-4">
-                        <a href="#" className="text-gray-700 hover:text-purple-600">Home</a>
-                        <a href="#" className="text-gray-700 hover:text-purple-600">My Listings</a>
-                        <a href="#" className="text-gray-700 hover:text-purple-600">Messages</a>
-                        <a href="#" className="text-gray-700 hover:text-purple-600">Profile</a>
-                    </nav>
-                </div>
-            </header>
-
-            <main className="pt-20">
+            {/* Main Content */}
+            <Box component="main" sx={{flexGrow: 1, pt: 10}}>
                 {/* Banner Section */}
-                <section className="relative">
-                    <img
-                        src="/assets/banner.jpg"  // Replace with your banner image
+                <Box sx={{position: "relative", height: 256}}>
+                    <Box
+                        component="img"
+                        src="/assets/banner.jpg"
                         alt="Banner"
-                        className="w-screen h-64 object-cover"
+                        sx={{width: "100%", height: "100%", objectFit: "cover"}}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-50"></div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <h1 className="text-4xl md:text-6xl font-extrabold text-white">
+                    <Box
+                        sx={{
+                            position: "absolute",
+                            inset: 0,
+                            background:
+                                "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 100%)",
+                        }}
+                    />
+                    <Box
+                        sx={{
+                            position: "absolute",
+                            top: "50%",
+                            left: "50%",
+                            transform: "translate(-50%, -50%)",
+                            textAlign: "center",
+                        }}
+                    >
+                        <Typography variant="h3" sx={{color: "#fff", fontWeight: 600}}>
                             Discover Great Deals
-                        </h1>
-                    </div>
-                </section>
+                        </Typography>
+                    </Box>
+                </Box>
 
                 {/* Categories Section */}
-                <section className="py-8 bg-white">
-                    <div className="w-screen px-4 sm:px-6 lg:px-8">
-                        <h2 className="text-2xl font-bold text-purple-600 mb-4 text-center">
+                <Box sx={{py: 4, backgroundColor: "#fff"}}>
+                    <Box sx={{mx: {xs: 2, sm: 4, md: 8}}}>
+                        <Typography
+                            variant="h5"
+                            sx={{
+                                textAlign: "center",
+                                fontWeight: 600,
+                                color: "#6b46c1",
+                                mb: 2,
+                            }}
+                        >
                             Shop by Category
-                        </h2>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-gray-50 p-4 rounded shadow hover:shadow-lg transition flex flex-col items-center">
-                                <img
-                                    src="/assets/category-electronics.webp"
-                                    alt="Electronics"
-                                    className="h-16 w-16 object-contain mb-2"
-                                />
-                                <span className="text-gray-700 font-medium">Electronics</span>
-                            </div>
-                            <div className="bg-gray-50 p-4 rounded shadow hover:shadow-lg transition flex flex-col items-center">
-                                <img
-                                    src="/assets/category-fashion.webp"
-                                    alt="Fashion"
-                                    className="h-16 w-16 object-contain mb-2"
-                                />
-                                <span className="text-gray-700 font-medium">Fashion</span>
-                            </div>
-                            <div className="bg-gray-50 p-4 rounded shadow hover:shadow-lg transition flex flex-col items-center">
-                                <img
-                                    src="/assets/category-home.webp"
-                                    alt="Home & Garden"
-                                    className="h-16 w-16 object-contain mb-2"
-                                />
-                                <span className="text-gray-700 font-medium">Home & Garden</span>
-                            </div>
-                            <div className="bg-gray-50 p-4 rounded shadow hover:shadow-lg transition flex flex-col items-center">
-                                <img
-                                    src="/assets/category-sports.webp"
-                                    alt="Sports"
-                                    className="h-16 w-16 object-contain mb-2"
-                                />
-                                <span className="text-gray-700 font-medium">Sports</span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                        </Typography>
+                        <Grid container spacing={2}>
+                            {[
+                                {src: "/assets/category-electronics.webp", label: "Electronics"},
+                                {src: "/assets/category-fashion.webp", label: "Fashion"},
+                                {src: "/assets/category-home.webp", label: "Home & Garden"},
+                                {src: "/assets/category-sports.webp", label: "Sports"},
+                            ].map((cat) => (
+                                <Grid item xs={6} md={3} key={cat.label}>
+                                    <Paper
+                                        sx={{
+                                            p: 2,
+                                            textAlign: "center",
+                                            cursor: "pointer",
+                                            transition: "box-shadow 0.3s",
+                                            "&:hover": {boxShadow: 4},
+                                        }}
+                                    >
+                                        <Box
+                                            component="img"
+                                            src={cat.src}
+                                            alt={cat.label}
+                                            sx={{height: 64, width: 64, objectFit: "contain", mb: 1}}
+                                        />
+                                        <Typography variant="body1" sx={{fontWeight: 600, color: "#4a5568"}}>
+                                            {cat.label}
+                                        </Typography>
+                                    </Paper>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Box>
+                </Box>
 
                 {/* Recently Viewed Listings Section */}
-                <section className="py-8 bg-gray-100">
-                    <div className="w-screen px-4 sm:px-6 lg:px-8">
-                        <h2 className="text-2xl font-bold text-purple-600 mb-4 text-center">
+                <Box sx={{py: 4, backgroundColor: "#f0f0f0"}}>
+                    <Box sx={{mx: {xs: 2, sm: 4, md: 8}}}>
+                        <Typography
+                            variant="h5"
+                            sx={{
+                                textAlign: "center",
+                                fontWeight: 600,
+                                color: "#6b46c1",
+                                mb: 2,
+                            }}
+                        >
                             Recently Viewed Listings
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                            {/* Example Listing Card */}
-                            <div className="bg-white rounded-lg shadow hover:shadow-xl transition p-4">
-                                <img
-                                    src="/assets/item5.webp"
-                                    alt="Recently Viewed 1"
-                                    className="w-full h-24 object-cover rounded"
-                                />
-                                <h3 className="mt-2 text-md font-semibold text-gray-800">
-                                    Recent Item 1
-                                </h3>
-                                <p className="text-gray-600 text-sm">$15.99</p>
-                            </div>
-                            <div className="bg-white rounded-lg shadow hover:shadow-xl transition p-4">
-                                <img
-                                    src="/assets/item6.webp"
-                                    alt="Recently Viewed 2"
-                                    className="w-full h-24 object-cover rounded"
-                                />
-                                <h3 className="mt-2 text-md font-semibold text-gray-800">
-                                    Recent Item 2
-                                </h3>
-                                <p className="text-gray-600 text-sm">$25.99</p>
-                            </div>
-                            <div className="bg-white rounded-lg shadow hover:shadow-xl transition p-4">
-                                <img
-                                    src="/assets/item7.webp"
-                                    alt="Recently Viewed 3"
-                                    className="w-full h-24 object-cover rounded"
-                                />
-                                <h3 className="mt-2 text-md font-semibold text-gray-800">
-                                    Recent Item 3
-                                </h3>
-                                <p className="text-gray-600 text-sm">$35.99</p>
-                            </div>
-                            <div className="bg-white rounded-lg shadow hover:shadow-xl transition p-4">
-                                <img
-                                    src="/assets/item8.webp"
-                                    alt="Recently Viewed 4"
-                                    className="w-full h-24 object-cover rounded"
-                                />
-                                <h3 className="mt-2 text-md font-semibold text-gray-800">
-                                    Recent Item 4
-                                </h3>
-                                <p className="text-gray-600 text-sm">$45.99</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                        </Typography>
+                        <Grid container spacing={2}>
+                            {[1, 2, 3, 4].map((item) => (
+                                <Grid item xs={12} sm={6} md={3} key={item}>
+                                    <Paper
+                                        sx={{
+                                            p: 2,
+                                            cursor: "pointer",
+                                            transition: "box-shadow 0.3s",
+                                            "&:hover": {boxShadow: 4},
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            justifyContent: "space-between",
+                                        }}
+                                    >
+                                        <Box
+                                            component="img"
+                                            src={`/assets/item${item + 4}.webp`}
+                                            alt={`Recently Viewed ${item}`}
+                                            sx={{
+                                                width: "100%",
+                                                height: 96,
+                                                objectFit: "cover",
+                                                borderRadius: 1,
+                                            }}
+                                        />
+                                        {/* Text block below image, left aligned */}
+                                        <Box sx={{mt: 1, textAlign: "left"}}>
+                                            <Typography variant="body1" sx={{fontWeight: 600, color: "#4a5568"}}>
+                                                Recent Item {item}
+                                            </Typography>
+                                            <Typography variant="body2" sx={{fontWeight: 600, color: "#718096"}}>
+                                                ${15 * item + 0.99}
+                                            </Typography>
+                                        </Box>
+                                    </Paper>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Box>
+                </Box>
 
                 {/* Featured Listings Section */}
-                <section className="py-8 bg-gray-50">
-                    <div className="w-screen px-4 sm:px-6 lg:px-8">
-                        <h2 className="text-2xl font-bold text-purple-600 mb-4 text-center">
+                <Box sx={{py: 4, backgroundColor: "#f9fafb"}}>
+                    <Box sx={{mx: {xs: 2, sm: 4, md: 8}}}>
+                        <Typography
+                            variant="h5"
+                            sx={{
+                                textAlign: "center",
+                                fontWeight: 600,
+                                color: "#6b46c1",
+                                mb: 2,
+                            }}
+                        >
                             Featured Listings
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white rounded-lg shadow hover:shadow-xl transition p-4">
-                                <img
-                                    src="/assets/item1.webp"
-                                    alt="Item 1"
-                                    className="w-full h-24 object-cover rounded"
-                                />
-                                <h3 className="mt-2 text-md font-semibold text-gray-800">
-                                    Item Title 1
-                                </h3>
-                                <p className="text-gray-600 text-sm">$19.99</p>
-                            </div>
-                            <div className="bg-white rounded-lg shadow hover:shadow-xl transition p-4">
-                                <img
-                                    src="/assets/item2.webp"
-                                    alt="Item 2"
-                                    className="w-full h-24 object-cover rounded"
-                                />
-                                <h3 className="mt-2 text-md font-semibold text-gray-800">
-                                    Item Title 2
-                                </h3>
-                                <p className="text-gray-600 text-sm">$29.99</p>
-                            </div>
-                            <div className="bg-white rounded-lg shadow hover:shadow-xl transition p-4">
-                                <img
-                                    src="/assets/item3.webp"
-                                    alt="Item 3"
-                                    className="w-full h-24 object-cover rounded"
-                                />
-                                <h3 className="mt-2 text-md font-semibold text-gray-800">
-                                    Item Title 3
-                                </h3>
-                                <p className="text-gray-600 text-sm">$39.99</p>
-                            </div>
-                            <div className="bg-white rounded-lg shadow hover:shadow-xl transition p-4">
-                                <img
-                                    src="/assets/item4.webp"
-                                    alt="Item 4"
-                                    className="w-full h-24 object-cover rounded"
-                                />
-                                <h3 className="mt-2 text-md font-semibold text-gray-800">
-                                    Item Title 4
-                                </h3>
-                                <p className="text-gray-600 text-sm">$49.99</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </main>
+                        </Typography>
+                        <Grid container spacing={2}>
+                            {[1, 2, 3, 4].map((item) => (
+                                <Grid item xs={12} sm={6} md={3} key={item}>
+                                    <Paper
+                                        sx={{
+                                            p: 2,
+                                            transition: "box-shadow 0.3s",
+                                            "&:hover": {boxShadow: 4},
+                                        }}
+                                    >
+                                        <Box
+                                            component="img"
+                                            src={`/assets/item${item}.webp`}
+                                            alt={`Item ${item}`}
+                                            sx={{
+                                                width: "100%",
+                                                height: 96,
+                                                objectFit: "cover",
+                                                borderRadius: 1,
+                                            }}
+                                        />
+                                        {/* Text block below image, left aligned */}
+                                        <Box sx={{mt: 1, textAlign: "left"}}>
+                                            <Typography variant="body1" sx={{fontWeight: 600, color: "#4a5568"}}>
+                                                Item Title {item}
+                                            </Typography>
+                                            <Typography variant="body2" sx={{fontWeight: 600, color: "#718096"}}>
+                                                ${10 * item + 9.99}
+                                            </Typography>
+                                        </Box>
+                                    </Paper>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Box>
+                </Box>
+            </Box>
 
             {/* Footer Section */}
-            <footer className="bg-gradient-to-r from-purple-700 to-indigo-700 py-6">
-                <div className="w-screen px-4 sm:px-6 lg:px-8 text-center text-white">
-                    <p className="mb-2">
+            <Box
+                component="footer"
+                sx={{
+                    width: "100vw",
+                    background: "linear-gradient(to right, #6b46c1, #5a67d8)",
+                    py: 3,
+                    mt: "auto",
+                    position: "relative",
+                }}
+            >
+                <Box sx={{mx: {xs: 2, sm: 4, md: 8}, textAlign: "center", color: "#fff"}}>
+                    <Typography variant="body2" sx={{mb: 1, fontWeight: 600}}>
                         © {new Date().getFullYear()} Florida Polytechnic University MarketPlace. All rights reserved.
-                    </p>
-                    <p>
-                        <a href="mailto:info@fpu.edu" className="underline">info@fpu.edu</a>
-                    </p>
-                </div>
-            </footer>
-        </div>
+                    </Typography>
+                    <Typography variant="body2" sx={{fontWeight: 600}}>
+                        <a href="mailto:info@fpu.edu" style={{textDecoration: "underline", color: "#fff"}}>
+                            info@fpu.edu
+                        </a>
+                    </Typography>
+                </Box>
+            </Box>
+        </Box>
     );
 };
 
