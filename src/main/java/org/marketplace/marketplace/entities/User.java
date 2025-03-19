@@ -48,6 +48,12 @@ public class User implements UserDetails {
 	@OneToMany( mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true )
 	private List<Item> items = new ArrayList<>();
 
+	@OneToMany( mappedBy = "seller_id", cascade = CascadeType.ALL, orphanRemoval = true )
+	private List<Sale> sales = new ArrayList<>();
+
+	@OneToMany( mappedBy = "buyer_id", cascade = CascadeType.ALL, orphanRemoval = true )
+	private List<Sale> purchases = new ArrayList<>();
+
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 

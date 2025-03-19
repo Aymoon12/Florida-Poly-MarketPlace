@@ -5,8 +5,6 @@ import java.time.LocalDate;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -25,34 +23,24 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table
 @Builder
-public class Item {
+public class Sale {
 
 	@Id
 	@GeneratedValue( strategy = GenerationType.AUTO )
-	private Long id;
+	private Long Id;
 
-	@Column( name = "title", nullable = false )
-	private String title;
+	@Column( name = "salesDate", nullable = false )
+	private LocalDate salesDate;
 
-	@Column( name = "description" )
-	private String description;
-
-	@Column( name = "price", nullable = false )
-	private BigDecimal price;
-
-	@Column( name = "category", nullable = false )
-	@Enumerated( EnumType.ORDINAL )
-	private Category category;
-
-	@Column( name = "status", nullable = false )
-	@Enumerated( EnumType.STRING )
-	private Status status;
+	@Column( name = "salesPrice", nullable = false )
+	private BigDecimal salesPrice;
 
 	@ManyToOne( fetch = FetchType.LAZY )
-	@JoinColumn( name = "user_id", nullable = false )
-	private User user;
+	@JoinColumn( name = "seller_id", nullable = false )
+	private User seller;
 
-	@Column( name = "expirationDate", nullable = false )
-	private LocalDate expirationDate;
+	@ManyToOne( fetch = FetchType.LAZY )
+	@JoinColumn( name = "buyer_id", nullable = false )
+	private User buyer;
 
 }
