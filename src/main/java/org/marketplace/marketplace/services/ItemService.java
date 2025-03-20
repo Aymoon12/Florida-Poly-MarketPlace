@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import org.marketplace.marketplace.dto.ItemDto;
 import org.marketplace.marketplace.entities.Category;
@@ -80,6 +81,19 @@ public class ItemService {
 			}
 			return itemDtos;
 
+		} catch ( Exception e ) {
+			log.error( e.getMessage(), e );
+		}
+		return Collections.emptyList();
+	}
+
+	public List<ItemDto> getAllListingsByCategory( final String category ) {
+
+		try {
+
+			List<Item> items = itemRepository.findAllItemsByCategory( Category.valueOf( category ) )
+					.orElseThrow( () -> new RuntimeException( "Error fetching items." ) );
+			return items.stream().map( ItemDto::from ).collect( Collectors.toList() );
 		} catch ( Exception e ) {
 			log.error( e.getMessage(), e );
 		}
