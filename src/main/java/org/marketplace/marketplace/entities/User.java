@@ -54,8 +54,8 @@ public class User implements UserDetails {
 	@OneToMany( mappedBy = "buyer", cascade = CascadeType.ALL, orphanRemoval = true )
 	private List<Sale> purchases = new ArrayList<>();
 
-	@OneToMany
-	private List<Item> history = new ArrayList<>();
+	@OneToMany( mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true )
+	private List<ViewHistory> itemHistory = new ArrayList<>();
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
