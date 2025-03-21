@@ -2,6 +2,8 @@ package org.marketplace.marketplace.entities;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -57,5 +59,8 @@ public class Item {
 
 	@Column( name = "createdAt", nullable = false )
 	private LocalDateTime createdAt;
+
+	@OneToMany( mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true )
+	private List<ViewHistory> usersViewed;
 
 }

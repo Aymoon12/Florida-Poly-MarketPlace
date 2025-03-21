@@ -11,6 +11,7 @@ import org.marketplace.marketplace.entities.Item;
 import org.marketplace.marketplace.entities.Sale;
 import org.marketplace.marketplace.entities.Status;
 import org.marketplace.marketplace.entities.User;
+import org.marketplace.marketplace.entities.ViewHistory;
 import org.marketplace.marketplace.repository.ItemRepository;
 import org.marketplace.marketplace.repository.SaleRepository;
 import org.marketplace.marketplace.repository.UserRepository;
@@ -28,6 +29,7 @@ public class UserService {
 	private final UserRepository userRepository;
 	private final ItemRepository itemRepository;
 	private final SaleRepository saleRepository;
+	private final ViewHistoryService viewHistoryService;
 
 	public Boolean userExists( final Long userId ) {
 
@@ -46,8 +48,8 @@ public class UserService {
 			User user = userRepository.findById( userid ).orElseThrow( () -> new RuntimeException( "User not found" ) );
 			Item item = itemRepository.findById( itemId ).orElseThrow( () -> new RuntimeException( "item not found" ) );
 
-			user.getHistory().addFirst( item );
-			userRepository.save( user );
+			ViewHistory view = ViewHistory.builder().user( user ).item( item ).build();
+			viewHistoryService.save( view );
 			return true;
 
 		} catch ( Exception e ) {
@@ -62,8 +64,9 @@ public class UserService {
 
 			User user = userRepository.findById( userid ).orElseThrow( () -> new RuntimeException( "User not found" ) );
 
-			return user.getHistory().stream().filter( item -> item.getStatus() == Status.ACTIVE ).limit( 4 )
-					.map( ItemDto::from ).collect( Collectors.toList() );
+			return user.getItemHistory().stream().map( ViewHistory::getItem )
+					.filter( item -> item.getStatus() == Status.ACTIVE ).map( ItemDto::from )
+					.collect( Collectors.toList() );
 
 		} catch ( Exception e ) {
 			log.error( e.getMessage(), e );
