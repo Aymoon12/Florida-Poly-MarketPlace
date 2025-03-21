@@ -1,7 +1,7 @@
 package org.marketplace.marketplace.entities;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -53,6 +53,9 @@ public class Item {
 	private User user;
 
 	@Column( name = "expirationDate", nullable = false )
-	private LocalDate expirationDate;
+	private LocalDateTime expirationDate;
+
+	@Column( name = "createdAt", nullable = false )
+	private LocalDateTime createdAt;
 
 }

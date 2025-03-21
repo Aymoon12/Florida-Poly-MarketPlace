@@ -1,7 +1,7 @@
 package org.marketplace.marketplace.services;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -16,6 +16,7 @@ import org.marketplace.marketplace.entities.User;
 import org.marketplace.marketplace.repository.ItemRepository;
 import org.marketplace.marketplace.repository.UserRepository;
 import org.marketplace.marketplace.requests.ItemRequest;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +42,7 @@ public class ItemService {
 			Item item = Item.builder().title( itemRequest.getName() ).description( itemRequest.getDescription() )
 					.price( BigDecimal.valueOf( itemRequest.getPrice() ) )
 					.category( Category.valueOf( itemRequest.getCategory() ) ).user( user ).status( Status.ACTIVE )
-					.expirationDate( LocalDate.now().plusDays( 7L ) ).build();
+					.expirationDate( LocalDateTime.now().plusDays( 7L ) ).build();
 			itemRepository.save( item );
 
 			return true;
@@ -94,6 +95,20 @@ public class ItemService {
 			List<Item> items = itemRepository.findAllItemsByCategory( Category.valueOf( category ) )
 					.orElseThrow( () -> new RuntimeException( "Error fetching items." ) );
 			return items.stream().map( ItemDto::from ).collect( Collectors.toList() );
+		} catch ( Exception e ) {
+			log.error( e.getMessage(), e );
+		}
+		return Collections.emptyList();
+	}
+
+	public List<ItemDto> search( String query ) {
+
+		try {
+
+			List<Item> results = itemRepository.searchItems( query, Status.ACTIVE, PageRequest.of( 0, 10 ) )
+					.orElseThrow( () -> new RuntimeException( "Error fetching items." ) );
+
+			return results.stream().map( ItemDto::from ).collect( Collectors.toList() );
 		} catch ( Exception e ) {
 			log.error( e.getMessage(), e );
 		}

@@ -41,4 +41,11 @@ public class ItemController {
 
 	}
 
+	@GetMapping( "/search" )
+	public ResponseEntity<?> searchListing( @RequestParam final String query ) {
+
+		return ResponseEntity.ok( itemService.search( query ) );
+
+	}
+
 }
