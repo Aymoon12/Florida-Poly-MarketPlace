@@ -25,8 +25,7 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
 	Optional<List<Item>> findAllItemsByCategory( final Category category_id );
 
 	@Query( "SELECT i FROM Item i WHERE i.status = :status AND  LOWER(i.title) LIKE LOWER(CONCAT('%', :keyword, '%')) "
-			+ "OR LOWER(i.description) LIKE LOWER(CONCAT('%', :keyword, '%')) "
-			+ "OR LOWER(i.category) LIKE LOWER(CONCAT('%', :keyword, '%')) ORDER BY i.createdAt DESC " )
+			+ "OR LOWER(i.description) LIKE LOWER(CONCAT('%', :keyword, '%'))  ORDER BY i.createdAt DESC " )
 	Optional<List<Item>> searchItems( @Param( "keyword" ) String keyword, @Param( "status" ) Status status,
 			Pageable pageable );
 

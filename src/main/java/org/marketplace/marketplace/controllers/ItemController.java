@@ -23,13 +23,14 @@ public class ItemController {
 	private final ItemService itemService;
 
 	@PostMapping( "/createListing" )
-	public ResponseEntity<?> createListing( @RequestParam final Long userId, @RequestBody final ItemRequest request ) {
+	public ResponseEntity<?> createListing( @RequestParam( "userId" ) final Long userId,
+			@RequestBody final ItemRequest request ) {
 
 		return ResponseEntity.ok( itemService.addItem( userId, request ) );
 	}
 
 	@DeleteMapping( "/deleteListing" )
-	public ResponseEntity<?> deleteListing( @RequestParam final Long itemId ) {
+	public ResponseEntity<?> deleteListing( @RequestParam( "itemId" ) final Long itemId ) {
 
 		return ResponseEntity.ok( itemService.deleteItem( itemId ) );
 	}

@@ -1,9 +1,20 @@
 import {useNavigate} from "react-router-dom";
 import polylogo from "./assets/poly-logo.webp";
 import {AppBar, Box, Button, Grid, InputBase, Paper, Toolbar, Typography,} from "@mui/material";
+import {useEffect} from "react";
 
 const HomePage = () => {
     const navigate = useNavigate();
+
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token');
+        const user_id = params.get('user_id');
+        console.log(token)
+
+    }, []);
+
 
     return (
         <Box sx={{display: "flex", flexDirection: "column", minHeight: "100vh"}}>

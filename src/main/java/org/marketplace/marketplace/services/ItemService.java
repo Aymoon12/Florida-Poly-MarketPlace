@@ -34,6 +34,7 @@ public class ItemService {
 	private final UserRepository userRepository;
 	private final UserService userService;
 
+	@Transactional
 	public Boolean addItem( final Long userId, final ItemRequest itemRequest ) {
 
 		try {
@@ -42,9 +43,9 @@ public class ItemService {
 			Item item = Item.builder().title( itemRequest.getName() ).description( itemRequest.getDescription() )
 					.price( BigDecimal.valueOf( itemRequest.getPrice() ) )
 					.category( Category.valueOf( itemRequest.getCategory() ) ).user( user ).status( Status.ACTIVE )
-					.expirationDate( LocalDateTime.now().plusDays( 7L ) ).build();
+					.expirationDate( LocalDateTime.now().plusDays( 7L ) ).createdAt( LocalDateTime.now() ).build();
 			itemRepository.save( item );
-
+			log.info( "Item added successfully: {}", itemRequest );
 			return true;
 
 		} catch ( NoSuchElementException e ) {
