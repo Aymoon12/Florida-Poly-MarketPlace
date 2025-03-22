@@ -33,16 +33,17 @@ public class ItemService {
 	private final ItemRepository itemRepository;
 	private final UserRepository userRepository;
 	private final UserService userService;
+	private final S3Service s3Service;
 
 	@Transactional
-	public Boolean addItem( final Long userId, final ItemRequest itemRequest ) {
+	public Boolean addItem( final ItemRequest itemRequest ) {
 
 		try {
-			User user = userRepository.findById( userId ).orElseThrow();
+			User user = userRepository.findById( Long.parseLong( itemRequest.getUserId() ) ).orElseThrow();
 
 			Item item = Item.builder().title( itemRequest.getName() ).description( itemRequest.getDescription() )
 					.price( BigDecimal.valueOf( itemRequest.getPrice() ) )
-					.category( Category.valueOf( itemRequest.getCategory() ) ).user( user ).status( Status.ACTIVE )
+					.category( Category.fromString( itemRequest.getCategory() ) ).user( user ).status( Status.ACTIVE )
 					.expirationDate( LocalDateTime.now().plusDays( 7L ) ).createdAt( LocalDateTime.now() ).build();
 			itemRepository.save( item );
 			log.info( "Item added successfully: {}", itemRequest );
@@ -59,6 +60,8 @@ public class ItemService {
 
 		try {
 			Item item = itemRepository.findById( itemId ).orElseThrow();
+			// Delete associated images
+			s3Service.deleteItemImages(itemId);
 			itemRepository.delete( item );
 			return true;
 
@@ -79,7 +82,8 @@ public class ItemService {
 			List<Item> items = user.getItems().stream().filter( item -> item.getStatus() == Status.ACTIVE ).toList();
 			List<ItemDto> itemDtos = new ArrayList<>();
 			for ( Item item : items ) {
-				itemDtos.add( ItemDto.from( item ) );
+				List<String> imageUrls = s3Service.getItemImagesUrls(item.getId());
+				itemDtos.add( ItemDto.from( item, imageUrls ) );
 			}
 			return itemDtos;
 
@@ -92,27 +96,52 @@ public class ItemService {
 	public List<ItemDto> getAllListingsByCategory( final String category ) {
 
 		try {
-
 			List<Item> items = itemRepository.findAllItemsByCategory( Category.valueOf( category ) )
 					.orElseThrow( () -> new RuntimeException( "Error fetching items." ) );
-			return items.stream().map( ItemDto::from ).collect( Collectors.toList() );
+			return items.stream()
+					.map(item -> ItemDto.from(item, s3Service.getItemImagesUrls(item.getId())))
+					.collect( Collectors.toList() );
 		} catch ( Exception e ) {
 			log.error( e.getMessage(), e );
 		}
 		return Collections.emptyList();
 	}
 
-	public List<ItemDto> search( String query ) {
-
+	public List<ItemDto> search(String query, int page, int size) {
 		try {
+			// Use the provided pagination parameters
+			List<Item> results = itemRepository.searchItems(query, Status.ACTIVE, PageRequest.of(page, size))
+					.orElseThrow(() -> new RuntimeException("Error fetching items."));
 
-			List<Item> results = itemRepository.searchItems( query, Status.ACTIVE, PageRequest.of( 0, 10 ) )
-					.orElseThrow( () -> new RuntimeException( "Error fetching items." ) );
-
-			return results.stream().map( ItemDto::from ).collect( Collectors.toList() );
-		} catch ( Exception e ) {
-			log.error( e.getMessage(), e );
+			// Convert to DTOs but with optimized image URL fetching
+			return results.stream()
+					.map(item -> {
+						try {
+							List<String> imageUrls = s3Service.getItemImagesUrls(item.getId());
+							return ItemDto.from(item, imageUrls);
+						} catch (Exception e) {
+							log.error("Error fetching image URLs for item {}: {}", item.getId(), e.getMessage());
+							return ItemDto.from(item, List.of()); // Empty image list on error
+						}
+					})
+					.collect(Collectors.toList());
+		} catch (Exception e) {
+			log.error("Error searching for items with query '{}' (page {}, size {}): {}", 
+					query, page, size, e.getMessage(), e);
 		}
 		return Collections.emptyList();
+	}
+	
+	public ItemDto getItemById(Long itemId) {
+		try {
+			Item item = itemRepository.findById(itemId)
+					.orElseThrow(() -> new NoSuchElementException("Item not found with id: " + itemId));
+			
+			List<String> imageUrls = s3Service.getItemImagesUrls(itemId);
+			return ItemDto.from(item, imageUrls);
+		} catch (Exception e) {
+			log.error("Error fetching item with id: {}", itemId, e);
+			return null;
+		}
 	}
 }

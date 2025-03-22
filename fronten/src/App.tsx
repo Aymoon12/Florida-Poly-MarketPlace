@@ -4,6 +4,8 @@ import HomePage from "./HomePage.tsx";
 import ListingsPage from "./ListingsPage";
 import CreateListing from "./CreateListing";
 import MySelling from "./MySelling";
+import SearchResults from "./SearchResults";
+import ItemDetailsPage from "./ItemDetailsPage";
 import './index.css';
 
 function App() {
@@ -15,6 +17,8 @@ function App() {
                 <Route path="/listings" element={<ListingsPage/>}/>
                 <Route path="/create-listing" element={<CreateListing/>}/>
                 <Route path="/myselling" element={<MySelling/>}/>
+                <Route path="/search" element={<SearchResults/>}/>
+                <Route path="/item/:itemId" element={<ItemDetailsPage/>}/>
             </Routes>
         </Router>
     );

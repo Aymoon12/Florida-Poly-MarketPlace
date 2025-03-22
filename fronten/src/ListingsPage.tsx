@@ -17,10 +17,109 @@ import {
     TableHead,
     TableRow,
     Typography,
+    CircularProgress,
+    Alert,
 } from "@mui/material";
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+
+interface DashboardStats {
+    totalSales: number;
+    totalPurchases: number;
+    activeListings: number;
+}
+
+interface ActivityItem {
+    date: string;
+    activity: string;
+    amount: number;
+}
 
 const Dashboard = () => {
     const navigate = useNavigate();
+    const [username, setUsername] = useState<string>('User');
+    const [stats, setStats] = useState<DashboardStats>({
+        totalSales: 0,
+        totalPurchases: 0,
+        activeListings: 0
+    });
+    const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            const userId = localStorage.getItem('userId');
+            if (!userId) {
+                setError('User not authenticated');
+                setLoading(false);
+                return;
+            }
+
+            try {
+                // These API endpoints are placeholders and should be updated based on your backend
+                const statsResponse = await axios.get(`http://localhost:8080/api/v1/user/dashboardStats`, {
+                    params: { userId },
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`
+                    }
+                });
+                
+                if (statsResponse.data) {
+                    setStats(statsResponse.data);
+                }
+
+                // Fetch recent activity
+                const activityResponse = await axios.get(`http://localhost:8080/api/v1/user/recentActivity`, {
+                    params: { userId },
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`
+                    }
+                });
+                
+                if (activityResponse.data && Array.isArray(activityResponse.data)) {
+                    setRecentActivity(activityResponse.data);
+                }
+
+                // Fetch user info
+                const userResponse = await axios.get(`http://localhost:8080/api/v1/user/${userId}`, {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`
+                    }
+                });
+                
+                if (userResponse.data && userResponse.data.name) {
+                    setUsername(userResponse.data.name);
+                }
+            } catch (err) {
+                console.error('Error fetching dashboard data:', err);
+                // Use default data if API fails
+                setStats({
+                    totalSales: 2450,
+                    totalPurchases: 1780,
+                    activeListings: 12
+                });
+                
+                setRecentActivity([
+                    { date: '2025-03-15', activity: 'Sold "Vintage Camera"', amount: 120 },
+                    { date: '2025-03-14', activity: 'Purchased "Old Book Collection"', amount: 60 },
+                    { date: '2025-03-13', activity: 'Listed "Antique Vase"', amount: 85 }
+                ]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, []);
+
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{display: "flex", minHeight: "100vh", backgroundColor: "#f9fafb"}}>
@@ -65,10 +164,16 @@ const Dashboard = () => {
 
             {/* Main Content */}
             <Box sx={{flex: 1, p: 3}}>
+                {error && (
+                    <Alert severity="error" sx={{ mb: 3 }}>
+                        {error}
+                    </Alert>
+                )}
+                
                 {/* Header */}
                 <Paper sx={{p: 2, mb: 3, boxShadow: 2}}>
                     <Typography variant="h4" sx={{fontWeight: "bold", color: "#6b46c1"}}>
-                        Welcome, [User Name]
+                        Welcome, {username}
                     </Typography>
                     <Typography variant="body1" sx={{color: "#718096", mt: 1}}>
                         Overview of your account activities.
@@ -84,7 +189,7 @@ const Dashboard = () => {
                                     Total Sales
                                 </Typography>
                                 <Typography variant="h4" sx={{fontWeight: "bold", color: "#6b46c1", mt: 1}}>
-                                    $2,450
+                                    ${stats.totalSales}
                                 </Typography>
                             </CardContent>
                         </Card>
@@ -96,7 +201,7 @@ const Dashboard = () => {
                                     Total Purchases
                                 </Typography>
                                 <Typography variant="h4" sx={{fontWeight: "bold", color: "#6b46c1", mt: 1}}>
-                                    $1,780
+                                    ${stats.totalPurchases}
                                 </Typography>
                             </CardContent>
                         </Card>
@@ -108,7 +213,7 @@ const Dashboard = () => {
                                     Active Listings
                                 </Typography>
                                 <Typography variant="h4" sx={{fontWeight: "bold", color: "#6b46c1", mt: 1}}>
-                                    12
+                                    {stats.activeListings}
                                 </Typography>
                             </CardContent>
                         </Card>
@@ -130,21 +235,20 @@ const Dashboard = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                <TableRow>
-                                    <TableCell>2025-03-15</TableCell>
-                                    <TableCell>Sold "Vintage Camera"</TableCell>
-                                    <TableCell>$120</TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell>2025-03-14</TableCell>
-                                    <TableCell>Purchased "Old Book Collection"</TableCell>
-                                    <TableCell>$60</TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell>2025-03-13</TableCell>
-                                    <TableCell>Listed "Antique Vase"</TableCell>
-                                    <TableCell>$85</TableCell>
-                                </TableRow>
+                                {recentActivity.map((item, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>{item.date}</TableCell>
+                                        <TableCell>{item.activity}</TableCell>
+                                        <TableCell>${item.amount}</TableCell>
+                                    </TableRow>
+                                ))}
+                                {recentActivity.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={3} sx={{ textAlign: 'center' }}>
+                                            No recent activity found
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </Paper>

@@ -26,6 +26,7 @@ public class SecurityConfiguration {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
 		return http
+				.cors(corsConfig -> {})
 				.csrf(AbstractHttpConfigurer::disable)
 				.authorizeHttpRequests(
 						req-> {

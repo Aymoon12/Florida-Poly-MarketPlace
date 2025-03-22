@@ -23,10 +23,9 @@ public class ItemController {
 	private final ItemService itemService;
 
 	@PostMapping( "/createListing" )
-	public ResponseEntity<?> createListing( @RequestParam( "userId" ) final Long userId,
-			@RequestBody final ItemRequest request ) {
+	public ResponseEntity<?> createListing( @RequestBody final ItemRequest request ) {
 
-		return ResponseEntity.ok( itemService.addItem( userId, request ) );
+		return ResponseEntity.ok( itemService.addItem( request ) );
 	}
 
 	@DeleteMapping( "/deleteListing" )
@@ -43,10 +42,12 @@ public class ItemController {
 	}
 
 	@GetMapping( "/search" )
-	public ResponseEntity<?> searchListing( @RequestParam final String query ) {
+	public ResponseEntity<?> searchListing( 
+		@RequestParam("query") final String query,
+		@RequestParam(value = "page", defaultValue = "0") final int page,
+		@RequestParam(value = "size", defaultValue = "10") final int size ) {
 
-		return ResponseEntity.ok( itemService.search( query ) );
-
+		return ResponseEntity.ok( itemService.search( query, page, size ) );
 	}
 
 }

@@ -9,6 +9,6 @@ public class ItemRequest {
 	private final String description;
 	private final Double price;
 	private final String category;
-	private final int user_id;
+	private final String userId;
 
 }
