@@ -40,56 +40,60 @@ const CreateListing: React.FC = () => {
 
     const navigate = useNavigate();
 
-    const uploadFileToS3 = async (file: UploadedFile, itemId: number) => {
+    /**
+     * Upload a file to S3 using a presigned URL
+     * @param file The file to upload
+     * @param itemId The item ID to associate with the file
+     * @returns Promise that resolves when upload is complete
+     */
+    const uploadFileToS3 = async (file: UploadedFile, itemId: number): Promise<void> => {
         try {
+            console.log(`Starting upload for file ${file.name} to item ID ${itemId}`);
+            
             // Mark file as uploading
             setFiles(prevFiles => 
                 prevFiles.map(f => f === file ? {...f, uploading: true} : f)
             );
             
-            // Get presigned URL
-            const response = await axios.get(`http://localhost:8080/api/v1/images/upload-url`, {
-                params: {
-                    itemId,
-                    contentType: file.type
-                },
+            // Step 1: Get a presigned URL from our backend
+            const presignedUrlResponse = await axios.get(
+                `http://localhost:8080/api/v1/images/upload-url`, 
+                {
+                    params: { 
+                        itemId: itemId,
+                        contentType: file.type 
+                    },
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                    }
+                }
+            );
+            
+            const uploadUrl = presignedUrlResponse.data.uploadUrl;
+            console.log(`Got presigned URL for item ${itemId}:`, uploadUrl);
+            
+            // Step 2: Use the presigned URL to upload directly to S3
+            await axios.put(uploadUrl, file, {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                    'Content-Type': file.type,
                 }
             });
             
-            const uploadUrl = response.data.uploadUrl;
+            console.log(`Successfully uploaded file ${file.name} for item ${itemId}`);
             
-            // Create a clean XMLHttpRequest for S3 with only the required headers
-            const uploadXhr = new XMLHttpRequest();
-            uploadXhr.open('PUT', uploadUrl, true);
-            uploadXhr.setRequestHeader('Content-Type', file.type);
-            // Do not include any other headers like Authorization for S3 uploads
-            
-            uploadXhr.onload = function() {
-                if (this.status === 200) {
-                    // Mark file as uploaded
-                    setFiles(prevFiles => 
-                        prevFiles.map(f => f === file ? {...f, uploading: false, uploaded: true} : f)
-                    );
-                } else {
-                    // Mark file as error
-                    setFiles(prevFiles => 
-                        prevFiles.map(f => f === file ? {...f, uploading: false, error: true} : f)
-                    );
-                }
-            };
-            
-            uploadXhr.send(file);
-            
-            return true;
+            // Mark file as uploaded
+            setFiles(prevFiles => 
+                prevFiles.map(f => f === file ? {...f, uploading: false, uploaded: true} : f)
+            );
         } catch (error) {
-            console.error("Error uploading file:", error);
+            console.error(`Error uploading file ${file.name} for item ${itemId}:`, error);
+            
             // Mark file as error
             setFiles(prevFiles => 
                 prevFiles.map(f => f === file ? {...f, uploading: false, error: true} : f)
             );
-            return false;
+            
+            throw error; // Re-throw to be handled by the caller
         }
     };
 
@@ -108,30 +112,41 @@ const CreateListing: React.FC = () => {
         setUploadStatus(null);
         
         try {
-
-            const itemRequest = {
-                name: title,
-                description,
-                price: parseFloat(price),
-                category,
-                userId: localStorage.getItem("userId") || "1"
-            }
-            // Create the listing without using userId as a query parameter
-            const listingResponse = await axios.post(`http://localhost:8080/api/v1/item/createListing`, itemRequest, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem("token")}`
-                }
-            })
-
-            if (listingResponse.status === 200) {
-                console.log("Listing created successfully");
-            }
+            // Get the current user ID from local storage
+            const userId = localStorage.getItem('userId') || "1";
             
-            if (listingResponse.data === true && files.length > 0) {
-                // Get the item ID from the response (assuming backend returns item ID)
-                // For now, we're creating a mock ID
-                const itemId = new Date().getTime(); // This should be replaced with actual item ID
+            if (!userId) {
+                setUploadStatus({
+                    success: false,
+                    message: 'User not authenticated. Please log in.'
+                });
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Create the listing first
+            const response = await axios.post(
+                `http://localhost:8080/api/v1/item/createListing`,
+                {
+                    userId: userId,
+                    name: title,
+                    description,
+                    price: parseFloat(price),
+                    category,
+                },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem("token")}`
+                    }
+                }
+            );
+            
+            console.log('Listing created:', response.data);
+            
+            // If we have files to upload and the listing was created successfully
+            if (files.length > 0 && response.data.success && response.data.itemId) {
+                const itemId = response.data.itemId;
                 
                 // Upload each file
                 const uploadPromises = files.map(file => uploadFileToS3(file, itemId));

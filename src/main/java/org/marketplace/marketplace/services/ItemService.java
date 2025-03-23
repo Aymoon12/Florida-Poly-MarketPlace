@@ -36,7 +36,7 @@ public class ItemService {
 	private final S3Service s3Service;
 
 	@Transactional
-	public Boolean addItem( final ItemRequest itemRequest ) {
+	public Long addItem( final ItemRequest itemRequest ) {
 
 		try {
 			User user = userRepository.findById( Long.parseLong( itemRequest.getUserId() ) ).orElseThrow();
@@ -45,14 +45,14 @@ public class ItemService {
 					.price( BigDecimal.valueOf( itemRequest.getPrice() ) )
 					.category( Category.fromString( itemRequest.getCategory() ) ).user( user ).status( Status.ACTIVE )
 					.expirationDate( LocalDateTime.now().plusDays( 7L ) ).createdAt( LocalDateTime.now() ).build();
-			itemRepository.save( item );
-			log.info( "Item added successfully: {}", itemRequest );
-			return true;
+			Item savedItem = itemRepository.save( item );
+			log.info( "Item added successfully: {}, id: {}", itemRequest, savedItem.getId() );
+			return savedItem.getId();
 
 		} catch ( NoSuchElementException e ) {
 			log.error( e.getMessage(), e );
 		}
-		return false;
+		return null;
 
 	}
 

@@ -1,6 +1,7 @@
 package org.marketplace.marketplace.services;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,6 +31,7 @@ public class UserService {
 	private final ItemRepository itemRepository;
 	private final SaleRepository saleRepository;
 	private final ViewHistoryService viewHistoryService;
+	private final S3Service s3Service;
 
 	public Boolean userExists( final Long userId ) {
 
@@ -59,15 +61,23 @@ public class UserService {
 	}
 
 	public List<ItemDto> recentlyViewedItems( final Long userid ) {
-
 		try {
-
 			User user = userRepository.findById( userid ).orElseThrow( () -> new RuntimeException( "User not found" ) );
 
-			return user.getItemHistory().stream().map( ViewHistory::getItem )
-					.filter( item -> item.getStatus() == Status.ACTIVE ).map( ItemDto::from )
+			return user.getItemHistory().stream()
+					.map( ViewHistory::getItem )
+					.filter( item -> item.getStatus() == Status.ACTIVE )
+					.map( item -> {
+						List<String> imageUrls = new ArrayList<>();
+						try {
+							// Get image URLs for the item
+							imageUrls = s3Service.getItemImagesUrls(item.getId());
+						} catch (Exception e) {
+							log.error("Error fetching image URLs for item {}: {}", item.getId(), e.getMessage());
+						}
+						return ItemDto.from(item, imageUrls);
+					})
 					.collect( Collectors.toList() );
-
 		} catch ( Exception e ) {
 			log.error( e.getMessage(), e );
 		}
