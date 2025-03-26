@@ -22,18 +22,14 @@ public enum Category {
 		this.key = key;
 	}
 
-	public static Category fromString(String category) {
-		switch (category) {
-			case "Electronics":
-				return ELECTRONICS;
-			case "Books":
-				return BOOKS;
-			case "Collectibles":
-				return COLLECTIBLES;
-			case "Fashion":
-				return FASHION;
-			default:
-				return OTHER;
-		}
+	public static Category fromString( String category ) {
+
+		return switch ( category.toLowerCase() ) {
+			case "electronics" -> ELECTRONICS;
+			case "books" -> BOOKS;
+			case "collectibles" -> COLLECTIBLES;
+			case "fashion" -> FASHION;
+			default -> OTHER;
+		};
 	}
 }

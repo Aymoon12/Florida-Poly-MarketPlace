@@ -5,15 +5,18 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.jetbrains.annotations.NotNull;
 import org.marketplace.marketplace.dto.ItemDto;
 import org.marketplace.marketplace.entities.Category;
 import org.marketplace.marketplace.entities.Item;
 import org.marketplace.marketplace.entities.Status;
 import org.marketplace.marketplace.entities.User;
+import org.marketplace.marketplace.entities.ViewHistory;
 import org.marketplace.marketplace.repository.ItemRepository;
 import org.marketplace.marketplace.repository.UserRepository;
 import org.marketplace.marketplace.requests.ItemRequest;
@@ -35,13 +38,9 @@ public class ItemService {
 	private final UserRepository userRepository;
 	private final UserService userService;
 	private final S3Service s3Service;
+	private final Map<Long, Integer> watchers = new ConcurrentHashMap<>();
 
-	// key - userId, value - List of past 5 most recently viwed items
-	// in memory cache for long sessions
-	private List<ItemDto> userRecentlyViewed;
-	private Map<Long, List<ItemDto>> sessionRecentlyViewed;
-
-	@Transactional
+	@Transactional		
 	public Long addItem( final ItemRequest itemRequest ) {
 
 		try {
@@ -50,7 +49,8 @@ public class ItemService {
 			Item item = Item.builder().title( itemRequest.getName() ).description( itemRequest.getDescription() )
 					.price( BigDecimal.valueOf( itemRequest.getPrice() ) )
 					.category( Category.fromString( itemRequest.getCategory() ) ).user( user ).status( Status.ACTIVE )
-					.expirationDate( LocalDateTime.now().plusDays( 7L ) ).createdAt( LocalDateTime.now() ).build();
+					.expirationDate( LocalDateTime.now().plusDays( 7L ) ).quantity( 1 ).createdAt( LocalDateTime.now() )
+					.build();
 			Item savedItem = itemRepository.save( item );
 			log.info( "Item added successfully: {}, id: {}", itemRequest, savedItem.getId() );
 			return savedItem.getId();
@@ -86,12 +86,7 @@ public class ItemService {
 				throw new UsernameNotFoundException( "User not found" );
 			}
 			List<Item> items = user.getItems().stream().filter( item -> item.getStatus() == Status.ACTIVE ).toList();
-			List<ItemDto> itemDtos = new ArrayList<>();
-			for ( Item item : items ) {
-				List<String> imageUrls = s3Service.getItemImagesUrls( item.getId() );
-				itemDtos.add( ItemDto.from( item, imageUrls ) );
-			}
-			return itemDtos;
+			return getItemDtosWithWatchers( items );
 
 		} catch ( Exception e ) {
 			log.error( e.getMessage(), e );
@@ -102,7 +97,7 @@ public class ItemService {
 	public List<ItemDto> getAllListingsByCategory( final String category ) {
 
 		try {
-			List<Item> items = itemRepository.findAllItemsByCategory( Category.valueOf( category ) )
+			List<Item> items = itemRepository.findAllItemsByCategory( Category.fromString( category ) )
 					.orElseThrow( () -> new RuntimeException( "Error fetching items." ) );
 			return items.stream().map( item -> ItemDto.from( item, s3Service.getItemImagesUrls( item.getId() ) ) )
 					.collect( Collectors.toList() );
@@ -136,24 +131,87 @@ public class ItemService {
 		return Collections.emptyList();
 	}
 
-	public ItemDto getItemById( Long itemId ) {
+	public ItemDto getItemById( Long userId, Long itemId ) {
 
 		try {
 			Item item = itemRepository.findById( itemId )
 					.orElseThrow( () -> new NoSuchElementException( "Item not found with id: " + itemId ) );
 
 			List<String> imageUrls = s3Service.getItemImagesUrls( itemId );
-
-			ItemDto itemDto = ItemDto.from( item, imageUrls );
-			if ( !sessionRecentlyViewed.containsKey( itemId ) ) {
-				sessionRecentlyViewed.put( item.getUser().getID(),
-						sessionRecentlyViewed.get( item.getUser().getID() ).add( itemDto ) );
-			}
-			return itemDto;
-
+			userService.viewItem( userId, item );
+			item.setViews( item.getViews() + 1 );
+			itemRepository.save( item );
+			log.info( "Item viewed: {}, views: {}", itemId, item.getViews() );
+			watchers.put( itemId, watchers.getOrDefault( itemId, 0 ) + 1 );
+			log.info( "Watchers: {}", watchers.get( itemId ) );
+			return ItemDto.from( item, imageUrls );
 		} catch ( Exception e ) {
 			log.error( "Error fetching item with id: {}", itemId, e );
 			return null;
 		}
 	}
+
+	public List<ItemDto> getRecentlyViewedItems( Long userId ) {
+		try {
+			User user = userRepository.findById( userId ).orElseThrow( () -> new RuntimeException( "User not found" ) );
+			
+			// Get the 5 most recent items by sorting the view history by viewedAt in descending order
+			List<Item> recent = user.getItemHistory().stream()
+				.sorted((vh1, vh2) -> vh2.getViewedAt().compareTo(vh1.getViewedAt()))
+				.limit(4)
+				.map(ViewHistory::getItem)
+				.toList();
+				
+			return getItemDtos(recent);
+		} catch ( final Exception e ) {
+			log.error("Error fetching recently viewed items for user {}: {}", userId, e.getMessage(), e);
+		}
+		return Collections.emptyList();
+	}
+
+	@NotNull
+	private List<ItemDto> getItemDtos( List<Item> recent ) {
+
+		List<ItemDto> itemDtos = new ArrayList<>();
+		for ( Item item : recent ) {
+			List<String> imageUrls = s3Service.getItemImagesUrls( item.getId() );
+			itemDtos.add( ItemDto.from( item, imageUrls ) );
+		}
+		return itemDtos;
+	}
+
+	@NotNull
+	private List<ItemDto> getItemDtosWithWatchers( List<Item> recent ) {
+
+		List<ItemDto> itemDtos = new ArrayList<>();
+		for ( Item item : recent ) {
+			List<String> imageUrls = s3Service.getItemImagesUrls( item.getId() );
+			itemDtos.add( ItemDto.from( item, imageUrls, watchers.getOrDefault( item.getId(), 0 ) ) );;
+		}
+		return itemDtos;
+	}
+
+	public List<ItemDto> getHistory( Long userId ) {
+
+		try {
+
+			User user = userRepository.findById( userId ).orElseThrow( () -> new RuntimeException( "User not found" ) );
+
+			List<Item> history = user.getItemHistory().stream().map( ViewHistory::getItem ).toList();
+			return getItemDtos( history );
+		} catch ( final Exception e ) {
+			log.error( e.getMessage(), e );
+		}
+		return Collections.emptyList();
+	}
+
+	public void decrementWatchers( Long itemId ) {
+		try {
+			watchers.put( itemId, watchers.get( itemId ) - 1 );
+			log.info( "Watcher left item: {}", itemId );
+		} catch ( final Exception e ) {
+			log.error( e.getMessage(), e );
+		}
+	}
+
 }

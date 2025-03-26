@@ -364,7 +364,7 @@ const LandingPage = () => {
                                     <Button 
                                         variant="contained" 
                                         size="large" 
-                                        onClick={handleLogin}
+                        onClick={handleLogin}
                                         sx={{ 
                                             bgcolor: "white", 
                                             color: "#6b46c1",
@@ -681,7 +681,7 @@ const LandingPage = () => {
                                         >
                                             <Box 
                                                 sx={{ 
-                                                    height: 180, 
+                                                    height: 200, 
                                                     position: "relative",
                                                     overflow: "hidden"
                                                 }}
@@ -692,9 +692,10 @@ const LandingPage = () => {
                                                     alt={item.title}
                                                     sx={{
                                                         width: "100%",
-                                                        height: "100%",
+                                                        height: "150px",
                                                         objectFit: "cover",
                                                         transition: "transform 0.6s",
+                                                        bgcolor: '#f8fafc',
                                                         "&:hover": {
                                                             transform: "scale(1.05)"
                                                         }

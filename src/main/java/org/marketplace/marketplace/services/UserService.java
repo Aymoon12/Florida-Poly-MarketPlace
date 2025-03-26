@@ -1,13 +1,10 @@
 package org.marketplace.marketplace.services;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.marketplace.marketplace.dto.DashboardDto;
-import org.marketplace.marketplace.dto.ItemDto;
 import org.marketplace.marketplace.entities.Item;
 import org.marketplace.marketplace.entities.Sale;
 import org.marketplace.marketplace.entities.Status;
@@ -16,6 +13,7 @@ import org.marketplace.marketplace.entities.ViewHistory;
 import org.marketplace.marketplace.repository.ItemRepository;
 import org.marketplace.marketplace.repository.SaleRepository;
 import org.marketplace.marketplace.repository.UserRepository;
+import org.marketplace.marketplace.repository.ViewHistoryRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +29,6 @@ public class UserService {
 	private final ItemRepository itemRepository;
 	private final SaleRepository saleRepository;
 	private final ViewHistoryService viewHistoryService;
-	private final S3Service s3Service;
 
 	public Boolean userExists( final Long userId ) {
 
@@ -43,45 +40,31 @@ public class UserService {
 		return userRepository.findById( userId ).orElse( null );
 	}
 
-	public Boolean viewItem( final Long userid, final Long itemId ) {
+	public void viewItem( final Long userid, final Item item ) {
 
-		try {
-
-			User user = userRepository.findById( userid ).orElseThrow( () -> new RuntimeException( "User not found" ) );
-			Item item = itemRepository.findById( itemId ).orElseThrow( () -> new RuntimeException( "item not found" ) );
-
-			ViewHistory view = ViewHistory.builder().user( user ).item( item ).build();
-			viewHistoryService.save( view );
-			return true;
-
-		} catch ( Exception e ) {
-			log.error( e.getMessage(), e );
-		}
-		return false;
-	}
-
-	public List<ItemDto> recentlyViewedItems( final Long userid ) {
 		try {
 			User user = userRepository.findById( userid ).orElseThrow( () -> new RuntimeException( "User not found" ) );
 
-			return user.getItemHistory().stream()
-					.map( ViewHistory::getItem )
-					.filter( item -> item.getStatus() == Status.ACTIVE )
-					.map( item -> {
-						List<String> imageUrls = new ArrayList<>();
-						try {
-							// Get image URLs for the item
-							imageUrls = s3Service.getItemImagesUrls(item.getId());
-						} catch (Exception e) {
-							log.error("Error fetching image URLs for item {}: {}", item.getId(), e.getMessage());
-						}
-						return ItemDto.from(item, imageUrls);
-					})
-					.collect( Collectors.toList() );
+			// Find existing view history for this item
+			ViewHistory existingView = user.getItemHistory().stream()
+					.filter( view -> view.getItem().getId().equals( item.getId() ) ).findFirst().orElse( null );
+
+			if ( existingView != null ) {
+				// Update the viewedAt timestamp
+				existingView.setViewedAt( ZonedDateTime.now() );
+				viewHistoryService.save( existingView );
+				log.info( "Updated view timestamp for user {} viewing item {}", userid, item.getId() );
+			} else {
+				// Create new view history
+				ViewHistory view =
+						ViewHistory.builder().user( user ).item( item ).viewedAt( ZonedDateTime.now() ).build();
+				viewHistoryService.save( view );
+				log.info( "Created new view history for user {} viewing item {}", userid, item.getId() );
+			}
 		} catch ( Exception e ) {
-			log.error( e.getMessage(), e );
+			log.error( "Error recording view for user {} viewing item {}: {}", userid, item.getId(), e.getMessage(),
+					e );
 		}
-		return Collections.emptyList();
 	}
 
 	public DashboardDto getDashboard( final Long userid ) {

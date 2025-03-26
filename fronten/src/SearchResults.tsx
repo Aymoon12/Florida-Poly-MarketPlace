@@ -79,6 +79,8 @@ const SearchResults: React.FC = () => {
   
   // Fetch search results
   useEffect(() => {
+    let isMounted = true;
+    
     // Only fetch when we have a query
     if (searchQuery && searchQuery.trim().length > 0) {
       // Clear the timer if it's already set
@@ -96,14 +98,17 @@ const SearchResults: React.FC = () => {
       
       // Debounce search - wait 500ms after typing stops
       const timer = setTimeout(() => {
-        fetchSearchResults();
+        if (isMounted) {
+          fetchSearchResults();
+        }
       }, 500);
       
       setSearchTimer(timer);
     }
     
-    // Cleanup timer on unmount
+    // Cleanup function
     return () => {
+      isMounted = false;
       if (searchTimer) {
         clearTimeout(searchTimer);
       }
@@ -240,12 +245,17 @@ const SearchResults: React.FC = () => {
               <CardActionArea component={Link} to={`/item/${item.id}`}>
                 <CardMedia
                   component="img"
-                  height="140"
+                  height="200"
                   image={item.imageUrls && item.imageUrls.length > 0 
                     ? item.imageUrls[0] 
                     : `/assets/item${(item.id % 8) + 1}.webp`}
                   alt={item.title}
-                  sx={{ objectFit: 'cover' }}
+                  sx={{ 
+                    objectFit: 'cover',
+                    width: '100%',
+                    aspectRatio: '1/1',
+                    bgcolor: '#f8fafc'
+                  }}
                 />
                 <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#4a5568", mb: 1 }}>

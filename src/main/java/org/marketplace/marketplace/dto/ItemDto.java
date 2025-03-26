@@ -1,6 +1,7 @@
 package org.marketplace.marketplace.dto;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.marketplace.marketplace.entities.Category;
@@ -25,6 +26,14 @@ public class ItemDto {
 	
 	private final List<String> imageUrls;
 
+	private final LocalDateTime createdAt;
+
+	private final int quantity;
+
+	private final int views;
+	
+	private final int watchers;
+
 	public static ItemDto from( final Item item ) {
 
 		return ItemDto.builder()
@@ -33,6 +42,9 @@ public class ItemDto {
 				.description( item.getDescription() )
 				.price( item.getPrice() )
 				.category( item.getCategory() )
+				.createdAt( item.getCreatedAt() )
+				.quantity( item.getQuantity() )
+				.views( item.getViews() )
 				.build();
 	}
 	
@@ -44,6 +56,24 @@ public class ItemDto {
 				.price( item.getPrice() )
 				.category( item.getCategory() )
 				.imageUrls( imageUrls )
+				.createdAt( item.getCreatedAt() )
+				.quantity( item.getQuantity() )
+				.views( item.getViews() )
+				.build();
+	}
+
+	public static ItemDto from( final Item item, final List<String> imageUrls, final int watchers ) {
+		return ItemDto.builder()
+				.id( item.getId() )
+				.title( item.getTitle() )
+				.description( item.getDescription() )
+				.price( item.getPrice() )
+				.category( item.getCategory() )
+				.imageUrls( imageUrls )
+				.createdAt( item.getCreatedAt() )
+				.quantity( item.getQuantity() )
+				.views( item.getViews() )
+				.watchers( watchers )
 				.build();
 	}
 

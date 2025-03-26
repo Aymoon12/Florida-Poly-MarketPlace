@@ -21,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @AllArgsConstructor
@@ -28,6 +29,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table
 @Builder
+@ToString
 public class Item {
 
 	@Id
@@ -63,5 +65,11 @@ public class Item {
 
 	@OneToMany( mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true )
 	private List<ViewHistory> usersViewed;
+
+	@Column( name = "quantity", nullable = false )
+	private int quantity;
+
+	@Column( name = "views", nullable = false )
+	private int views;
 
 }

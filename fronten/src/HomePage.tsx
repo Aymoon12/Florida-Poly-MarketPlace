@@ -1,27 +1,27 @@
 import {useNavigate} from "react-router-dom";
 import polylogo from "./assets/poly-logo.webp";
 import {
-    AppBar,
-    Avatar,
-    Badge,
-    Box,
-    Button,
-    Card,
-    CardActionArea,
-    CardContent,
-    CardMedia,
-    Container,
-    Divider,
-    Grid,
-    IconButton,
-    InputAdornment,
-    InputBase,
-    Paper,
-    Tab,
-    Tabs,
-    Toolbar,
-    Typography,
-    useTheme,
+  AppBar,
+  Avatar,
+  Badge,
+  Box,
+  Button,
+  Card,
+  CardActionArea,
+  CardContent,
+  CardMedia,
+  Container,
+  Divider,
+  Grid,
+  IconButton,
+  InputAdornment,
+  InputBase,
+  Paper,
+  Tab,
+  Tabs,
+  Toolbar,
+  Typography,
+  useTheme,
 } from "@mui/material";
 import {useEffect, useState} from "react";
 import SearchIcon from "@mui/icons-material/Search";
@@ -130,7 +130,7 @@ const HomePage = () => {
 
             if (userId) {
                 // Try to fetch the user's recently viewed items
-                const response = await axios.get(`http://localhost:8080/api/v1/user/recentlyViewedItems`, {
+                const response = await axios.get(`http://localhost:8080/api/v1/item/getRecentlyViewed`, {
                     params: {userId},
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("token")}`
@@ -184,18 +184,35 @@ const HomePage = () => {
     };
 
     useEffect(() => {
+        let isMounted = true;
+        setIsLoading(true);
+        
         const params = new URLSearchParams(window.location.search);
         const token = params.get('token');
         const user_id = params.get('userId');
-        console.log(token, user_id);
 
         if (token && user_id) {
             localStorage.setItem('token', token);
             localStorage.setItem('userId', user_id);
+            console.log(token, user_id);
         }
 
-        fetchItemsByCategory(currentCategory);
-        fetchRecentlyViewed();
+        const fetchData = async () => {
+            if (isMounted) {
+                await fetchItemsByCategory(currentCategory);
+                await fetchRecentlyViewed();
+            }
+        };
+
+        fetchData().finally(() => {
+            if (isMounted) {
+                setIsLoading(false);
+            }
+        });
+
+        return () => {
+            isMounted = false;
+        };
     }, [currentCategory]);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -312,7 +329,7 @@ const HomePage = () => {
                                 <ShoppingCartIcon/>
                             </Badge>
                         </IconButton>
-                        <Button
+                            <Button
                             variant="outlined"
                             color="primary"
                             startIcon={<AddIcon/>}
@@ -331,7 +348,7 @@ const HomePage = () => {
                             onClick={() => navigate("/create-listing")}
                         >
                             Sell
-                        </Button>
+                            </Button>
                         <Avatar
                             sx={{
                                 width: 36,
@@ -386,7 +403,7 @@ const HomePage = () => {
             {/* Main Content */}
             <Box component="main" sx={{flexGrow: 1, pt: 12}}>
                 <Container maxWidth="xl">
-                    {/* Banner Section */}
+                {/* Banner Section */}
                     <Paper
                         elevation={0}
                         sx={{
@@ -488,9 +505,9 @@ const HomePage = () => {
                                 </Grid>
                             ))}
                         </Grid>
-                    </Box>
+                </Box>
 
-                    {/* Recently Viewed Listings Section */}
+                {/* Recently Viewed Listings Section */}
                     {recentlyViewed.length > 0 && (
                         <Box sx={{mb: 4}}>
                             <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2}}>
@@ -500,9 +517,9 @@ const HomePage = () => {
                                 </Typography>
                                 <Button
                                     endIcon={<ArrowForwardIosIcon sx={{fontSize: 14}}/>}
-                                    sx={{
+                            sx={{
                                         textTransform: 'none',
-                                        fontWeight: 600,
+                                fontWeight: 600,
                                         color: '#6b46c1'
                                     }}
                                 >
@@ -529,11 +546,14 @@ const HomePage = () => {
                                             <CardActionArea onClick={() => navigate(`/item/${item.id}`)}>
                                                 <CardMedia
                                                     component="img"
-                                                    height="160"
+                                                    height="200"
                                                     image={getDefaultImage(item)}
                                                     alt={item.title}
                                                     sx={{
                                                         objectFit: "cover",
+                                                        width: '100%',
+                                                        aspectRatio: '1/1',
+                                                        bgcolor: '#f8fafc'
                                                     }}
                                                 />
                                                 <CardContent>
@@ -569,7 +589,7 @@ const HomePage = () => {
                             <Typography variant="h5" sx={{fontWeight: 700, color: "#4a5568"}}>
                                 <FavoriteIcon sx={{verticalAlign: 'middle', mr: 1, color: '#e53e3e'}}/>
                                 Featured Listings
-                            </Typography>
+                        </Typography>
                             <Button
                                 endIcon={<ArrowForwardIosIcon sx={{fontSize: 14}}/>}
                                 sx={{
@@ -600,12 +620,15 @@ const HomePage = () => {
                                     >
                                         <CardActionArea onClick={() => navigate(`/item/${item.id}`)}>
                                             <CardMedia
-                                                component="img"
-                                                height="160"
+                                            component="img"
+                                                height="200"
                                                 image={getDefaultImage(item)}
                                                 alt={item.title}
-                                                sx={{
-                                                    objectFit: "cover",
+                                            sx={{
+                                                objectFit: "cover",
+                                                    width: '100%',
+                                                    aspectRatio: '1/1',
+                                                    bgcolor: '#f8fafc'
                                                 }}
                                             />
                                             <CardContent>
@@ -615,7 +638,7 @@ const HomePage = () => {
                                                 </Typography>
                                                 <Typography variant="h6" sx={{fontWeight: 700, color: "#6b46c1"}}>
                                                     ${item.price.toFixed(2)}
-                                                </Typography>
+                                            </Typography>
                                                 <Box sx={{
                                                     display: 'flex',
                                                     alignItems: 'center',
@@ -625,8 +648,8 @@ const HomePage = () => {
                                                     <Box sx={{display: 'flex', alignItems: 'center'}}>
                                                         <Typography variant="body2" sx={{color: "#718096", mr: 1}}>
                                                             {item.description}
-                                                        </Typography>
-                                                    </Box>
+                                            </Typography>
+                                        </Box>
                                                 </Box>
                                             </CardContent>
                                         </CardActionArea>
@@ -653,7 +676,7 @@ const HomePage = () => {
                             >
                                 View all
                             </Button>
-                        </Box>
+                </Box>
 
                         <Paper
                             elevation={0}
@@ -673,7 +696,7 @@ const HomePage = () => {
                                         Great deals on textbooks, dorm furniture, and electronics from graduating
                                         students.
                                         Don't miss out on these one-time offers!
-                                    </Typography>
+                        </Typography>
                                     <Button
                                         variant="contained"
                                         color="primary"
@@ -689,11 +712,11 @@ const HomePage = () => {
                                     </Button>
                                 </Grid>
                                 <Grid item xs={12} md={6} sx={{textAlign: 'center'}}>
-                                    <Box
-                                        component="img"
+                                        <Box
+                                            component="img"
                                         src="/assets/banner.jpg"
                                         alt="Campus Deals"
-                                        sx={{
+                                            sx={{
                                             maxWidth: '100%',
                                             height: 'auto',
                                             maxHeight: 220,
@@ -702,7 +725,7 @@ const HomePage = () => {
                                         }}
                                     />
                                 </Grid>
-                            </Grid>
+                        </Grid>
                         </Paper>
                     </Box>
                 </Container>
