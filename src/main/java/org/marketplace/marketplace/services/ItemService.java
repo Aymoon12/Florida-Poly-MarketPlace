@@ -5,9 +5,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
@@ -40,7 +40,7 @@ public class ItemService {
 	private final S3Service s3Service;
 	private final Map<Long, Integer> watchers = new ConcurrentHashMap<>();
 
-	@Transactional		
+	@Transactional
 	public Long addItem( final ItemRequest itemRequest ) {
 
 		try {
@@ -152,19 +152,18 @@ public class ItemService {
 	}
 
 	public List<ItemDto> getRecentlyViewedItems( Long userId ) {
+
 		try {
 			User user = userRepository.findById( userId ).orElseThrow( () -> new RuntimeException( "User not found" ) );
-			
+
 			// Get the 5 most recent items by sorting the view history by viewedAt in descending order
 			List<Item> recent = user.getItemHistory().stream()
-				.sorted((vh1, vh2) -> vh2.getViewedAt().compareTo(vh1.getViewedAt()))
-				.limit(4)
-				.map(ViewHistory::getItem)
-				.toList();
-				
-			return getItemDtos(recent);
+					.sorted( ( vh1, vh2 ) -> vh2.getViewedAt().compareTo( vh1.getViewedAt() ) ).limit( 4 )
+					.map( ViewHistory::getItem ).toList();
+
+			return getItemDtos( recent );
 		} catch ( final Exception e ) {
-			log.error("Error fetching recently viewed items for user {}: {}", userId, e.getMessage(), e);
+			log.error( "Error fetching recently viewed items for user {}: {}", userId, e.getMessage(), e );
 		}
 		return Collections.emptyList();
 	}
@@ -186,7 +185,8 @@ public class ItemService {
 		List<ItemDto> itemDtos = new ArrayList<>();
 		for ( Item item : recent ) {
 			List<String> imageUrls = s3Service.getItemImagesUrls( item.getId() );
-			itemDtos.add( ItemDto.from( item, imageUrls, watchers.getOrDefault( item.getId(), 0 ) ) );;
+			itemDtos.add( ItemDto.from( item, imageUrls, watchers.getOrDefault( item.getId(), 0 ) ) );
+			;
 		}
 		return itemDtos;
 	}
@@ -206,8 +206,9 @@ public class ItemService {
 	}
 
 	public void decrementWatchers( Long itemId ) {
+
 		try {
-			watchers.put( itemId, watchers.get( itemId ) - 1 );
+			watchers.put( itemId, watchers.get( itemId ) != null ? watchers.get( itemId ) - 1 : 0 );
 			log.info( "Watcher left item: {}", itemId );
 		} catch ( final Exception e ) {
 			log.error( e.getMessage(), e );

@@ -58,6 +58,9 @@ public class User implements UserDetails {
 
 	@OneToMany( mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true )
 	private List<ViewHistory> itemHistory = new ArrayList<>();
+	
+	@OneToMany( mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true )
+	private List<CartItem> cartItems = new ArrayList<>();
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {

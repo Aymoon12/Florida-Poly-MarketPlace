@@ -6,6 +6,7 @@ import CreateListing from "./CreateListing";
 import MySelling from "./MySelling";
 import SearchResults from "./SearchResults";
 import ItemDetailsPage from "./ItemDetailsPage";
+import CartPage from "./CartPage";
 import './index.css';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
                 <Route path="/myselling" element={<MySelling/>}/>
                 <Route path="/search" element={<SearchResults/>}/>
                 <Route path="/item/:itemId" element={<ItemDetailsPage/>}/>
+                <Route path="/cart" element={<CartPage/>}/>
             </Routes>
         </Router>
     );

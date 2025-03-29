@@ -25,7 +25,6 @@ import {
 } from "@mui/material";
 import {useEffect, useState} from "react";
 import SearchIcon from "@mui/icons-material/Search";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import AddIcon from "@mui/icons-material/Add";
@@ -38,6 +37,7 @@ import BooksIcon from "@mui/icons-material/MenuBook";
 import SportsIcon from "@mui/icons-material/SportsSoccer";
 import HomeIcon from "@mui/icons-material/Home";
 import CollectiblesIcon from "@mui/icons-material/Storefront";
+import CartIcon from "./components/CartIcon";
 import axios from "axios";
 
 interface ItemType {
@@ -324,12 +324,8 @@ const HomePage = () => {
                                 <NotificationsIcon/>
                             </Badge>
                         </IconButton>
-                        <IconButton color="primary">
-                            <Badge badgeContent={1} color="error">
-                                <ShoppingCartIcon/>
-                            </Badge>
-                        </IconButton>
-                            <Button
+                        <CartIcon />
+                        <Button
                             variant="outlined"
                             color="primary"
                             startIcon={<AddIcon/>}
@@ -348,7 +344,7 @@ const HomePage = () => {
                             onClick={() => navigate("/create-listing")}
                         >
                             Sell
-                            </Button>
+                        </Button>
                         <Avatar
                             sx={{
                                 width: 36,

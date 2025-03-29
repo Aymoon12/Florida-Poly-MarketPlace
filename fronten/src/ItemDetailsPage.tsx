@@ -39,6 +39,7 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CategoryIcon from '@mui/icons-material/Category';
+import CartIcon from './components/CartIcon';
 import axios from 'axios';
 import {format, formatDistance} from 'date-fns';
 
@@ -170,12 +171,38 @@ const ItemDetailsPage: React.FC = () => {
         alert(`Processing purchase for ${quantity} x ${item.title}`);
     };
 
-    const handleAddToCart = () => {
+    const handleAddToCart = async () => {
         // Implement add to cart functionality
         if (!item) return;
 
-        // Add to cart logic here
-        alert(`Added ${quantity} x ${item.title} to cart`);
+        try {
+            const userId = localStorage.getItem('userId');
+            if (!userId) {
+                alert('Please log in to add items to your cart');
+                return;
+            }
+
+            const response = await axios.post('http://localhost:8080/api/v1/cart/add', null, {
+                params: {
+                    userId,
+                    itemId: item.id,
+                    quantity
+                },
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.status === 200) {
+                // Show success message
+                alert(`Added ${quantity} x ${item.title} to cart`);
+                // Optionally navigate to cart
+                // navigate('/cart');
+            }
+        } catch (err) {
+            console.error('Error adding item to cart:', err);
+            alert('Failed to add item to cart. Please try again.');
+        }
     };
 
     const formatDate = (dateString?: string) => {
