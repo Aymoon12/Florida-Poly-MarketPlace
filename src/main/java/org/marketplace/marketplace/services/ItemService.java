@@ -163,22 +163,11 @@ public class ItemService {
 					.sorted( ( vh1, vh2 ) -> vh2.getViewedAt().compareTo( vh1.getViewedAt() ) ).limit( 4 )
 					.map( ViewHistory::getItem ).toList();
 
-			return getItemDtos( recent );
+			return s3Service.getItemDtos( recent );
 		} catch ( final Exception e ) {
 			log.error( "Error fetching recently viewed items for user {}: {}", userId, e.getMessage(), e );
 		}
 		return Collections.emptyList();
-	}
-
-	@NotNull
-	public List<ItemDto> getItemDtos( List<Item> recent ) {
-
-		List<ItemDto> itemDtos = new ArrayList<>();
-		for ( Item item : recent ) {
-			List<String> imageUrls = s3Service.getItemImagesUrls( item.getId() );
-			itemDtos.add( ItemDto.from( item, imageUrls ) );
-		}
-		return itemDtos;
 	}
 
 	@NotNull
@@ -200,7 +189,7 @@ public class ItemService {
 			User user = userRepository.findById( userId ).orElseThrow( () -> new RuntimeException( "User not found" ) );
 
 			List<Item> history = user.getItemHistory().stream().map( ViewHistory::getItem ).toList();
-			return getItemDtos( history );
+			return s3Service.getItemDtos( history );
 		} catch ( final Exception e ) {
 			log.error( e.getMessage(), e );
 		}

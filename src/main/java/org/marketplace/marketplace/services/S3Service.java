@@ -2,6 +2,7 @@ package org.marketplace.marketplace.services;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +10,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.jetbrains.annotations.NotNull;
+import org.marketplace.marketplace.dto.ItemDto;
+import org.marketplace.marketplace.entities.Item;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -208,5 +212,16 @@ public class S3Service {
 	private String generateFileName( Long itemId ) {
 
 		return "image-" + UUID.randomUUID().toString() + ".jpg";
+	}
+
+	@NotNull
+	public List<ItemDto> getItemDtos( List<Item> recent ) {
+
+		List<ItemDto> itemDtos = new ArrayList<>();
+		for ( Item item : recent ) {
+			List<String> imageUrls = this.getItemImagesUrls( item.getId() );
+			itemDtos.add( ItemDto.from( item, imageUrls ) );
+		}
+		return itemDtos;
 	}
 }

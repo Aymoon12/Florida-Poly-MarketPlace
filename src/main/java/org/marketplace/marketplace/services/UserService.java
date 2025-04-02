@@ -28,7 +28,7 @@ public class UserService {
 	private final ItemRepository itemRepository;
 	private final SaleRepository saleRepository;
 	private final ViewHistoryService viewHistoryService;
-	private final ItemService itemService;
+	private final S3Service s3Service;
 
 	public Boolean userExists( final Long userId ) {
 
@@ -87,7 +87,7 @@ public class UserService {
 			final var activeListingsNum = activeListings.size();
 			activeListings.stream().limit( 5 );
 			return DashboardDto.builder().totalSales( totalSales ).totalPurchases( totalPurchases )
-					.activeListings( activeListingsNum ).mySelling( itemService.getItemDtos( activeListings ) )
+					.activeListings( activeListingsNum ).mySelling( s3Service.getItemDtos( activeListings ) )
 					.recentActivity( recentActivity ).build();
 
 		} catch ( Exception e ) {
