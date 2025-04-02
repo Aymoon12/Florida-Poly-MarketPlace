@@ -13,7 +13,6 @@ import org.marketplace.marketplace.entities.ViewHistory;
 import org.marketplace.marketplace.repository.ItemRepository;
 import org.marketplace.marketplace.repository.SaleRepository;
 import org.marketplace.marketplace.repository.UserRepository;
-import org.marketplace.marketplace.repository.ViewHistoryRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +28,7 @@ public class UserService {
 	private final ItemRepository itemRepository;
 	private final SaleRepository saleRepository;
 	private final ViewHistoryService viewHistoryService;
+	private final ItemService itemService;
 
 	public Boolean userExists( final Long userId ) {
 
@@ -84,8 +84,11 @@ public class UserService {
 			List<Item> activeListings = itemRepository.findAllItemsByUserIDAndStatus( userid, Status.ACTIVE )
 					.orElseThrow( () -> new RuntimeException( "Error finding Active Items." ) );
 
+			final var activeListingsNum = activeListings.size();
+			activeListings.stream().limit( 5 );
 			return DashboardDto.builder().totalSales( totalSales ).totalPurchases( totalPurchases )
-					.activeListings( activeListings.size() ).recentActivity( recentActivity ).build();
+					.activeListings( activeListingsNum ).mySelling( itemService.getItemDtos( activeListings ) )
+					.recentActivity( recentActivity ).build();
 
 		} catch ( Exception e ) {
 			log.error( e.getMessage(), e );

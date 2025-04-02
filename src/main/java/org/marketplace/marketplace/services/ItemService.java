@@ -38,6 +38,8 @@ public class ItemService {
 	private final UserRepository userRepository;
 	private final UserService userService;
 	private final S3Service s3Service;
+
+	// In memory watchers cache
 	private final Map<Long, Integer> watchers = new ConcurrentHashMap<>();
 
 	@Transactional
@@ -169,7 +171,7 @@ public class ItemService {
 	}
 
 	@NotNull
-	private List<ItemDto> getItemDtos( List<Item> recent ) {
+	public List<ItemDto> getItemDtos( List<Item> recent ) {
 
 		List<ItemDto> itemDtos = new ArrayList<>();
 		for ( Item item : recent ) {

@@ -53,8 +53,9 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 	private void redirectToDashboard( HttpServletResponse response, User user ) throws IOException {
 
 		String jwtToken = jwtService.generateToken( user );
-		String redirectUrl = UriComponentsBuilder.fromUriString( "http://localhost:5173/home" )
-				.queryParam( "userId", user.getID() ).queryParam( "token", jwtToken ).build().toUriString();
+		String redirectUrl =
+				UriComponentsBuilder.fromUriString( "http://localhost:5173/home" ).queryParam( "userId", user.getID() )
+						.queryParam( "token", jwtToken ).queryParam( "name", user.getName() ).build().toUriString();
 		response.sendRedirect( redirectUrl );
 	}
 

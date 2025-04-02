@@ -18,7 +18,7 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
 	@Query( "SELECT i FROM Item i WHERE i.id = ?1" )
 	Optional<Item> findItemById( final Long id );
 
-	@Query( "SELECT i FROM Item i WHERE i.user = ?1 AND i.status = ?2" )
+	@Query( "SELECT i FROM Item i WHERE i.user.ID = ?1 AND i.status = ?2" )
 	Optional<List<Item>> findAllItemsByUserIDAndStatus( final Long user_id, final Status status );
 
 	@Query( "SELECT i FROM Item i WHERE i.category = ?1 " )

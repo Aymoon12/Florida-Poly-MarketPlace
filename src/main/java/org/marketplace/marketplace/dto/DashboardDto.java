@@ -16,4 +16,5 @@ public class DashboardDto {
 	private BigDecimal totalPurchases;
 	private int activeListings;
 	private List<Sale> recentActivity;
+	private List<ItemDto> mySelling;
 }

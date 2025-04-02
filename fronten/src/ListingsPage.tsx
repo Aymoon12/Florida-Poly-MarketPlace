@@ -1,10 +1,12 @@
 import polylogo from "./assets/poly-logo.webp"
 import {useNavigate} from 'react-router-dom';
 import {
+    Alert,
     Box,
     Button,
     Card,
     CardContent,
+    CircularProgress,
     Grid,
     List,
     ListItem,
@@ -17,31 +19,58 @@ import {
     TableHead,
     TableRow,
     Typography,
-    CircularProgress,
-    Alert,
 } from "@mui/material";
-import { useState, useEffect } from 'react';
+import {useEffect, useState} from 'react';
 import axios from 'axios';
 
-interface DashboardStats {
-    totalSales: number;
-    totalPurchases: number;
-    activeListings: number;
-}
-
-interface ActivityItem {
-    date: string;
-    activity: string;
-    amount: number;
-}
 
 const Dashboard = () => {
+
+    interface Sale {
+        Id: number,
+        salesDate: string,
+        salesPrice: number,
+        seller: string,
+        buyer: string
+    }
+
+    interface Item {
+        id: number;
+        title: string;
+        description: string;
+        price: number;
+        status: string;
+        category: string;
+        seller: string;
+        imageUrls: string[];
+        createdAt: string;
+
+    }
+
+    interface DashboardStats {
+        totalSales: number;
+        totalPurchases: number;
+        activeListings: number;
+        recentActivity: Sale[]
+        mySelling: Item[]
+    }
+
+
+    interface ActivityItem {
+        date: string;
+        activity: string;
+        amount: number;
+    }
+
+
     const navigate = useNavigate();
     const [username, setUsername] = useState<string>('User');
     const [stats, setStats] = useState<DashboardStats>({
         totalSales: 0,
         totalPurchases: 0,
-        activeListings: 0
+        activeListings: 0,
+        recentActivity: [],
+        mySelling: []
     });
     const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -50,60 +79,64 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             const userId = localStorage.getItem('userId');
-            if (!userId) {
+            const name = localStorage.getItem('name')
+            if (!userId || !name) {
                 setError('User not authenticated');
                 setLoading(false);
                 return;
             }
+            setUsername(name)
 
             try {
-                // These API endpoints are placeholders and should be updated based on your backend
-                const statsResponse = await axios.get(`http://localhost:8080/api/v1/user/dashboardStats`, {
-                    params: { userId },
+
+                const statsResponse = await axios.get(`http://localhost:8080/api/v1/user/dashboardstats`, {
+                    params: {userId},
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("token")}`
                     }
                 });
-                
+
                 if (statsResponse.data) {
                     setStats(statsResponse.data);
                 }
 
-                // Fetch recent activity
-                const activityResponse = await axios.get(`http://localhost:8080/api/v1/user/recentActivity`, {
-                    params: { userId },
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`
-                    }
-                });
-                
-                if (activityResponse.data && Array.isArray(activityResponse.data)) {
-                    setRecentActivity(activityResponse.data);
-                }
-
-                // Fetch user info
-                const userResponse = await axios.get(`http://localhost:8080/api/v1/user/${userId}`, {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`
-                    }
-                });
-                
-                if (userResponse.data && userResponse.data.name) {
-                    setUsername(userResponse.data.name);
-                }
+                // // Fetch recent activity
+                // const activityResponse = await axios.get(`http://localhost:8080/api/v1/user/recentActivity`, {
+                //     params: {userId},
+                //     headers: {
+                //         Authorization: `Bearer ${localStorage.getItem("token")}`
+                //     }
+                // });
+                //
+                // if (activityResponse.data && Array.isArray(activityResponse.data)) {
+                //     setRecentActivity(activityResponse.data);
+                // }
+                //
+                // // Fetch user info
+                // const userResponse = await axios.get(`http://localhost:8080/api/v1/user/${userId}`, {
+                //     headers: {
+                //         Authorization: `Bearer ${localStorage.getItem("token")}`
+                //     }
+                // });
+                //
+                // if (userResponse.data && userResponse.data.name) {
+                //     setUsername(userResponse.data.name);
+                // }
             } catch (err) {
                 console.error('Error fetching dashboard data:', err);
                 // Use default data if API fails
                 setStats({
                     totalSales: 2450,
                     totalPurchases: 1780,
-                    activeListings: 12
+                    activeListings: 12,
+                    recentActivity: [],
+                    mySelling: []
                 });
-                
+
                 setRecentActivity([
-                    { date: '2025-03-15', activity: 'Sold "Vintage Camera"', amount: 120 },
-                    { date: '2025-03-14', activity: 'Purchased "Old Book Collection"', amount: 60 },
-                    { date: '2025-03-13', activity: 'Listed "Antique Vase"', amount: 85 }
+                    {date: '2025-03-15', activity: 'Sold "Vintage Camera"', amount: 120},
+                    {date: '2025-03-14', activity: 'Purchased "Old Book Collection"', amount: 60},
+                    {date: '2025-03-13', activity: 'Listed "Antique Vase"', amount: 85}
                 ]);
             } finally {
                 setLoading(false);
@@ -115,8 +148,8 @@ const Dashboard = () => {
 
     if (loading) {
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <CircularProgress />
+            <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}>
+                <CircularProgress/>
             </Box>
         );
     }
@@ -165,11 +198,11 @@ const Dashboard = () => {
             {/* Main Content */}
             <Box sx={{flex: 1, p: 3}}>
                 {error && (
-                    <Alert severity="error" sx={{ mb: 3 }}>
+                    <Alert severity="error" sx={{mb: 3}}>
                         {error}
                     </Alert>
                 )}
-                
+
                 {/* Header */}
                 <Paper sx={{p: 2, mb: 3, boxShadow: 2}}>
                     <Typography variant="h4" sx={{fontWeight: "bold", color: "#6b46c1"}}>
@@ -244,7 +277,7 @@ const Dashboard = () => {
                                 ))}
                                 {recentActivity.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={3} sx={{ textAlign: 'center' }}>
+                                        <TableCell colSpan={3} sx={{textAlign: 'center'}}>
                                             No recent activity found
                                         </TableCell>
                                     </TableRow>

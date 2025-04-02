@@ -12,6 +12,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface SaleRepository extends JpaRepository<Sale, Long> {
 
-	@Query( "SELECT i FROM Sale i WHERE i.seller = ?1 OR i.buyer =?1 ORDER BY i.salesDate" )
+	@Query( "SELECT i FROM Sale i WHERE i.seller.ID = ?1 OR i.buyer.ID =?1 ORDER BY i.salesDate" )
 	Optional<List<Sale>> findRecentActivity( Long userId, Pageable pageable );
 }
