@@ -35,6 +35,7 @@ import FavoriteIcon from "@mui/icons-material/Favorite";
 import AddIcon from "@mui/icons-material/Add";
 import TuneIcon from "@mui/icons-material/Tune";
 import axios from "axios";
+import {useNotifications} from "./services/NotificationContext";
 
 // Item interface based on ItemDto from backend
 interface Item {
@@ -67,76 +68,62 @@ const SearchResults: React.FC = () => {
     const [hasMore, setHasMore] = useState(true);
     const [sortOption, setSortOption] = useState("newest");
     const [searchTimer, setSearchTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [searchResults, setSearchResults] = useState<Item[]>([]);
+    const [category, setCategory] = useState<string | null>(null);
 
-    // Fetch search results
+    // Use notification context
+    const {unreadCount, fetchUnreadCount} = useNotifications();
+
+    // Replace the query-triggered useEffect with one that responds to location changes
     useEffect(() => {
-        let isMounted = true;
-
-        // Only fetch when we have a query
-        if (searchQuery && searchQuery.trim().length > 0) {
-            // Clear the timer if it's already set
-            if (searchTimer) {
-                clearTimeout(searchTimer);
-            }
-
-            // Set loading to true immediately
-            setLoading(true);
-
-            // Reset pagination when query changes
-            setPage(0);
-            setItems([]);
-            setHasMore(true);
-
-            // Debounce search - wait 500ms after typing stops
-            const timer = setTimeout(() => {
-                if (isMounted) {
-                    fetchSearchResults();
-                }
-            }, 500);
-
-            setSearchTimer(timer);
-        }
-
-        // Cleanup function
-        return () => {
-            isMounted = false;
-            if (searchTimer) {
-                clearTimeout(searchTimer);
-            }
-        };
-    }, [searchQuery]); // Only depend on query changes, not page
+        fetchSearchResults();
+    }, [location.search]);
 
     const fetchSearchResults = async () => {
+        setIsLoading(true);
         try {
-            setLoading(true);
-            const response = await axios.get(`http://localhost:8080/api/v1/item/search`, {
-                params: {query: searchQuery, page, size: 10},
+            // Get the search query and category from URL
+            const searchParams = new URLSearchParams(location.search);
+            const query = searchParams.get('q');
+            const categoryParam = searchParams.get('category');
+
+            setSearchQuery(query || "");
+            setCategory(categoryParam);
+
+            // Call API to get search results
+            let endpoint = `http://localhost:8080/api/v1/item/search`;
+            let params: any = {};
+
+            if (query) {
+                params.query = query;
+            }
+
+            if (categoryParam) {
+                params.category = categoryParam;
+            }
+
+            const response = await axios.get(endpoint, {
+                params,
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
                 }
             });
 
-            const newItems = response.data;
-
-            // If we got less items than requested, there are no more results
-            if (newItems.length < 10) {
-                setHasMore(false);
+            if (response.data && Array.isArray(response.data)) {
+                setSearchResults(response.data);
+                setItems(response.data)
             }
 
-            // Append new items to existing ones
-            setItems(prevItems => {
-                // Avoid duplicates by checking IDs
-                const itemIds = new Set(prevItems.map((item: Item) => item.id));
-                const uniqueNewItems = newItems.filter((item: Item) => !itemIds.has(item.id));
-                return [...prevItems, ...uniqueNewItems];
-            });
-
-            setLoading(false);
+            // Fetch notification count
+            await fetchUnreadCount();
         } catch (error) {
-            console.error('Error fetching search results:', error);
-            setError('Failed to fetch search results. Please try again.');
+            console.error("Error fetching search results:", error);
+            // Fallback to empty results or mock data if needed
+            setSearchResults([]);
+        } finally {
             setLoading(false);
-            setHasMore(false);
+            setIsLoading(false);
         }
     };
 
@@ -229,14 +216,14 @@ const SearchResults: React.FC = () => {
         }
 
         return (
-            <Grid container spacing={3}>
+            <Grid container spacing={1.5}>
                 {items.map((item: Item) => (
                     <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
                         <Card sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
                             <CardActionArea component={Link} to={`/item/${item.id}`}>
                                 <CardMedia
                                     component="img"
-                                    height="200"
+                                    height="180"
                                     image={item.imageUrls && item.imageUrls.length > 0
                                         ? item.imageUrls[0]
                                         : `/assets/item${(item.id % 8) + 1}.webp`}
@@ -248,7 +235,7 @@ const SearchResults: React.FC = () => {
                                         bgcolor: '#f8fafc'
                                     }}
                                 />
-                                <CardContent sx={{flexGrow: 1, display: 'flex', flexDirection: 'column'}}>
+                                <CardContent sx={{p: 1.5, flexGrow: 1, display: 'flex', flexDirection: 'column'}}>
                                     <Typography variant="subtitle1" sx={{fontWeight: 600, color: "#4a5568", mb: 1}}>
                                         {item.title}
                                     </Typography>
@@ -377,14 +364,14 @@ const SearchResults: React.FC = () => {
                     </Box>
 
                     {/* Navigation Icons */}
-                    <Box sx={{display: "flex", alignItems: "center", gap: 1}}>
-                        <IconButton color="primary" onClick={() => navigate("/myselling")}>
+                    <Box sx={{display: "flex", alignItems: "center", gap: 1, flexShrink: 0, minWidth: 'auto'}}>
+                        <IconButton color="primary" onClick={() => navigate("/myselling")} sx={{padding: '8px'}}>
                             <Badge badgeContent={2} color="error">
                                 <FavoriteIcon/>
                             </Badge>
                         </IconButton>
                         <IconButton color="primary">
-                            <Badge badgeContent={3} color="error">
+                            <Badge badgeContent={unreadCount} color="error">
                                 <NotificationsIcon/>
                             </Badge>
                         </IconButton>
@@ -421,7 +408,7 @@ const SearchResults: React.FC = () => {
                                 cursor: "pointer",
                                 bgcolor: "#6b46c1"
                             }}
-                            onClick={() => navigate("/myselling")}
+                            onClick={() => navigate("/settings")}
                         >
                             FP
                         </Avatar>
@@ -486,7 +473,7 @@ const SearchResults: React.FC = () => {
                     {renderContent()}
 
                     {/* Load more button */}
-                    {items.length > 0 && hasMore && (
+                    {items.length > 10 && hasMore && (
                         <Box sx={{mt: 4, textAlign: 'center'}}>
                             <Button
                                 variant="outlined"
@@ -521,4 +508,4 @@ const SearchResults: React.FC = () => {
     );
 };
 
-export default SearchResults; 
+export default SearchResults;

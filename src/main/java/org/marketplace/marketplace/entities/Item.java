@@ -2,6 +2,7 @@ package org.marketplace.marketplace.entities;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.CascadeType;
@@ -71,5 +72,8 @@ public class Item {
 
 	@Column( name = "views", nullable = false )
 	private int views;
+
+	@OneToMany( mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true )
+	private List<CartItem> cartItems = new ArrayList<>();
 
 }

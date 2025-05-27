@@ -132,25 +132,34 @@ const MySelling = () => {
     }
 
     return (
-        <Box sx={{display: "flex", minHeight: "100vh", backgroundColor: "#f9fafb"}}>
+        <Box sx={{display: "flex", minHeight: "100vh", backgroundColor: "#f8fafc"}}>
             {/* Sidebar */}
             <Box
                 sx={{
-                    width: 256,
+                    width: 280,
                     backgroundColor: "#fff",
-                    boxShadow: 2,
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
                     display: "flex",
                     flexDirection: "column",
                     p: 3,
+                    position: "fixed",
+                    height: "100vh",
+                    zIndex: 1,
                 }}
             >
                 <Box
                     component="img"
                     src={polylogo}
                     alt="Logo"
-                    sx={{height: 60, width: 60, mb: 2}}
+                    sx={{height: 60, width: 60, mb: 3}}
                 />
-                <Typography variant="h4" sx={{fontWeight: "bold", color: "#6b46c1", mb: 2}}>
+                <Typography variant="h4" sx={{
+                    fontWeight: "bold",
+                    background: "linear-gradient(45deg, #6b46c1 30%, #805ad5 90%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    mb: 3
+                }}>
                     Dashboard
                 </Typography>
                 <List sx={{flexGrow: 1}}>
@@ -162,13 +171,25 @@ const MySelling = () => {
                         {label: "Notifications", path: "/notifications"},
                         {label: "Settings", path: "/settings"},
                     ].map((item) => (
-                        <ListItem key={item.label} disablePadding>
-                            <ListItemButton onClick={() => navigate(item.path)}>
+                        <ListItem key={item.label} disablePadding sx={{mb: 1}}>
+                            <ListItemButton 
+                                onClick={() => navigate(item.path)}
+                                sx={{
+                                    borderRadius: 2,
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(107, 70, 193, 0.08)',
+                                    }
+                                }}
+                            >
                                 <ListItemText
                                     primary={item.label}
                                     primaryTypographyProps={{
                                         variant: "body1",
-                                        sx: {color: "#4a5568", textTransform: "none"},
+                                        sx: {
+                                            color: "#4a5568",
+                                            textTransform: "none",
+                                            fontWeight: 500
+                                        },
                                     }}
                                 />
                             </ListItemButton>
@@ -178,7 +199,7 @@ const MySelling = () => {
             </Box>
 
             {/* Main Content */}
-            <Box sx={{flex: 1, p: 3}}>
+            <Box sx={{flex: 1, p: 4, ml: "280px"}}>
                 {error && (
                     <Alert severity="error" sx={{ mb: 3 }}>
                         {error}

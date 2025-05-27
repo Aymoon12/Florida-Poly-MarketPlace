@@ -321,7 +321,7 @@ const HomePage = () => {
                                 <FavoriteIcon/>
                             </Badge>
                         </IconButton>
-                        <IconButton color="primary">
+                        <IconButton color="primary" onClick={() => navigate("/notifications")}>
                             <Badge badgeContent={3} color="error">
                                 <NotificationsIcon/>
                             </Badge>

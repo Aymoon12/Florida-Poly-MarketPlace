@@ -17,6 +17,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -58,9 +59,15 @@ public class User implements UserDetails {
 
 	@OneToMany( mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true )
 	private List<ViewHistory> itemHistory = new ArrayList<>();
-	
+
 	@OneToMany( mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true )
 	private List<CartItem> cartItems = new ArrayList<>();
+
+	@OneToMany( mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true )
+	private List<Notification> notifications = new ArrayList<>();
+
+	@OneToOne( mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true )
+	private UserSettings settings;
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {

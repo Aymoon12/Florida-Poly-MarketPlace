@@ -75,6 +75,7 @@ const Dashboard = () => {
     const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [mySelling, setMySelling] = useState<Item[]>([])
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -98,6 +99,7 @@ const Dashboard = () => {
 
                 if (statsResponse.data) {
                     setStats(statsResponse.data);
+                    setMySelling(statsResponse.data.mySelling)
                 }
 
                 // // Fetch recent activity
@@ -155,20 +157,29 @@ const Dashboard = () => {
     }
 
     return (
-        <Box sx={{display: "flex", minHeight: "100vh", backgroundColor: "#f9fafb"}}>
+        <Box sx={{display: "flex", minHeight: "100vh", backgroundColor: "#f8fafc"}}>
             {/* Sidebar */}
             <Box
                 sx={{
-                    width: 256,
+                    width: 280,
                     backgroundColor: "#fff",
-                    boxShadow: 2,
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
                     display: "flex",
                     flexDirection: "column",
                     p: 3,
+                    position: "fixed",
+                    height: "100vh",
+                    zIndex: 1,
                 }}
             >
-                <Box component="img" src={polylogo} alt="Logo" sx={{height: 60, width: 60, mb: 2}}/>
-                <Typography variant="h4" sx={{fontWeight: "bold", color: "#6b46c1", mb: 2}}>
+                <Box component="img" src={polylogo} alt="Logo" sx={{height: 60, width: 60, mb: 3}}/>
+                <Typography variant="h4" sx={{
+                    fontWeight: "bold",
+                    background: "linear-gradient(45deg, #6b46c1 30%, #805ad5 90%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    mb: 3
+                }}>
                     Dashboard
                 </Typography>
                 <List sx={{flexGrow: 1}}>
@@ -180,13 +191,25 @@ const Dashboard = () => {
                         {label: "Notifications", path: "/notifications"},
                         {label: "Settings", path: "/settings"},
                     ].map((item) => (
-                        <ListItem key={item.label} disablePadding>
-                            <ListItemButton onClick={() => navigate(item.path)}>
+                        <ListItem key={item.label} disablePadding sx={{mb: 1}}>
+                            <ListItemButton 
+                                onClick={() => navigate(item.path)}
+                                sx={{
+                                    borderRadius: 2,
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(107, 70, 193, 0.08)',
+                                    }
+                                }}
+                            >
                                 <ListItemText
                                     primary={item.label}
                                     primaryTypographyProps={{
                                         variant: "body1",
-                                        sx: {color: "#4a5568", textTransform: "none"},
+                                        sx: {
+                                            color: "#4a5568",
+                                            textTransform: "none",
+                                            fontWeight: 500
+                                        },
                                     }}
                                 />
                             </ListItemButton>
@@ -196,16 +219,29 @@ const Dashboard = () => {
             </Box>
 
             {/* Main Content */}
-            <Box sx={{flex: 1, p: 3}}>
+            <Box sx={{flex: 1, p: 4, ml: "280px"}}>
                 {error && (
-                    <Alert severity="error" sx={{mb: 3}}>
+                    <Alert severity="error" sx={{mb: 3, borderRadius: 2}}>
                         {error}
                     </Alert>
                 )}
 
                 {/* Header */}
-                <Paper sx={{p: 2, mb: 3, boxShadow: 2}}>
-                    <Typography variant="h4" sx={{fontWeight: "bold", color: "#6b46c1"}}>
+                <Paper 
+                    sx={{
+                        p: 3,
+                        mb: 4,
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                        borderRadius: 3,
+                        background: "linear-gradient(45deg, #ffffff 30%, #f8fafc 90%)",
+                    }}
+                >
+                    <Typography variant="h4" sx={{
+                        fontWeight: "bold",
+                        background: "linear-gradient(45deg, #6b46c1 30%, #805ad5 90%)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                    }}>
                         Welcome, {username}
                     </Typography>
                     <Typography variant="body1" sx={{color: "#718096", mt: 1}}>
@@ -214,38 +250,80 @@ const Dashboard = () => {
                 </Paper>
 
                 {/* Statistic Cards */}
-                <Grid container spacing={3} sx={{mb: 3}}>
+                <Grid container spacing={3} sx={{mb: 4}}>
                     <Grid item xs={12} md={4}>
-                        <Card sx={{p: 2}}>
+                        <Card sx={{
+                            p: 3,
+                            borderRadius: 3,
+                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                            background: "linear-gradient(45deg, #ffffff 30%, #f8fafc 90%)",
+                            transition: "transform 0.2s",
+                            '&:hover': {
+                                transform: "translateY(-4px)",
+                            }
+                        }}>
                             <CardContent>
-                                <Typography variant="h6" sx={{color: "#4a5568"}}>
+                                <Typography variant="h6" sx={{color: "#4a5568", mb: 2}}>
                                     Total Sales
                                 </Typography>
-                                <Typography variant="h4" sx={{fontWeight: "bold", color: "#6b46c1", mt: 1}}>
+                                <Typography variant="h4" sx={{
+                                    fontWeight: "bold",
+                                    background: "linear-gradient(45deg, #6b46c1 30%, #805ad5 90%)",
+                                    WebkitBackgroundClip: "text",
+                                    WebkitTextFillColor: "transparent",
+                                }}>
                                     ${stats.totalSales}
                                 </Typography>
                             </CardContent>
                         </Card>
                     </Grid>
                     <Grid item xs={12} md={4}>
-                        <Card sx={{p: 2}}>
+                        <Card sx={{
+                            p: 3,
+                            borderRadius: 3,
+                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                            background: "linear-gradient(45deg, #ffffff 30%, #f8fafc 90%)",
+                            transition: "transform 0.2s",
+                            '&:hover': {
+                                transform: "translateY(-4px)",
+                            }
+                        }}>
                             <CardContent>
-                                <Typography variant="h6" sx={{color: "#4a5568"}}>
+                                <Typography variant="h6" sx={{color: "#4a5568", mb: 2}}>
                                     Total Purchases
                                 </Typography>
-                                <Typography variant="h4" sx={{fontWeight: "bold", color: "#6b46c1", mt: 1}}>
+                                <Typography variant="h4" sx={{
+                                    fontWeight: "bold",
+                                    background: "linear-gradient(45deg, #6b46c1 30%, #805ad5 90%)",
+                                    WebkitBackgroundClip: "text",
+                                    WebkitTextFillColor: "transparent",
+                                }}>
                                     ${stats.totalPurchases}
                                 </Typography>
                             </CardContent>
                         </Card>
                     </Grid>
                     <Grid item xs={12} md={4}>
-                        <Card sx={{p: 2}}>
+                        <Card sx={{
+                            p: 3,
+                            borderRadius: 3,
+                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                            background: "linear-gradient(45deg, #ffffff 30%, #f8fafc 90%)",
+                            transition: "transform 0.2s",
+                            '&:hover': {
+                                transform: "translateY(-4px)",
+                            }
+                        }}>
                             <CardContent>
-                                <Typography variant="h6" sx={{color: "#4a5568"}}>
+                                <Typography variant="h6" sx={{color: "#4a5568", mb: 2}}>
                                     Active Listings
                                 </Typography>
-                                <Typography variant="h4" sx={{fontWeight: "bold", color: "#6b46c1", mt: 1}}>
+                                <Typography variant="h4" sx={{
+                                    fontWeight: "bold",
+                                    background: "linear-gradient(45deg, #6b46c1 30%, #805ad5 90%)",
+                                    WebkitBackgroundClip: "text",
+                                    WebkitTextFillColor: "transparent",
+                                }}>
                                     {stats.activeListings}
                                 </Typography>
                             </CardContent>
@@ -254,22 +332,39 @@ const Dashboard = () => {
                 </Grid>
 
                 {/* Recent Activity Table */}
-                <Box sx={{mb: 3}}>
-                    <Typography variant="h5" sx={{fontWeight: "bold", color: "#6b46c1", mb: 2}}>
+                <Box sx={{mb: 4}}>
+                    <Typography variant="h5" sx={{
+                        fontWeight: "bold",
+                        color: "#6b46c1",
+                        mb: 2,
+                        display: "flex",
+                        alignItems: "center",
+                    }}>
                         Recent Activity
                     </Typography>
-                    <Paper>
+                    <Paper sx={{
+                        borderRadius: 3,
+                        overflow: "hidden",
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                    }}>
                         <Table>
-                            <TableHead sx={{backgroundColor: "#f3f4f6"}}>
+                            <TableHead sx={{backgroundColor: "#f8fafc"}}>
                                 <TableRow>
-                                    <TableCell>Date</TableCell>
-                                    <TableCell>Activity</TableCell>
-                                    <TableCell>Amount</TableCell>
+                                    <TableCell sx={{fontWeight: "bold", color: "#4a5568"}}>Date</TableCell>
+                                    <TableCell sx={{fontWeight: "bold", color: "#4a5568"}}>Activity</TableCell>
+                                    <TableCell sx={{fontWeight: "bold", color: "#4a5568"}}>Amount</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {recentActivity.map((item, index) => (
-                                    <TableRow key={index}>
+                                    <TableRow 
+                                        key={index}
+                                        sx={{
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(107, 70, 193, 0.04)',
+                                            }
+                                        }}
+                                    >
                                         <TableCell>{item.date}</TableCell>
                                         <TableCell>{item.activity}</TableCell>
                                         <TableCell>${item.amount}</TableCell>
@@ -277,8 +372,10 @@ const Dashboard = () => {
                                 ))}
                                 {recentActivity.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={3} sx={{textAlign: 'center'}}>
-                                            No recent activity found
+                                        <TableCell colSpan={3} sx={{textAlign: 'center', py: 3}}>
+                                            <Typography variant="body1" sx={{color: "#718096"}}>
+                                                No recent activity found
+                                            </Typography>
                                         </TableCell>
                                     </TableRow>
                                 )}
@@ -290,63 +387,142 @@ const Dashboard = () => {
                 {/* Manage Selling and Buying Panels */}
                 <Grid container spacing={3}>
                     <Grid item xs={12} lg={6}>
-                        <Typography variant="h5" sx={{fontWeight: "bold", color: "#6b46c1", mb: 2}}>
+                        <Typography variant="h5" sx={{
+                            fontWeight: "bold",
+                            color: "#6b46c1",
+                            mb: 2,
+                            display: "flex",
+                            alignItems: "center",
+                        }}>
                             My Selling
                         </Typography>
-                        <Paper sx={{p: 2, mb: 2}}>
-                            <Box sx={{display: "flex", alignItems: "center"}}>
-                                <Box
-                                    component="img"
-                                    src="/assets/item1.webp"
-                                    alt="Item 1"
-                                    sx={{width: 80, height: 80, objectFit: "cover", borderRadius: 2}}
-                                />
-                                <Box sx={{ml: 2, flex: 1}}>
-                                    <Typography variant="h6" sx={{fontWeight: "bold", color: "#4a5568"}}>
-                                        Vintage Camera
-                                    </Typography>
-                                    <Typography variant="body1" sx={{color: "#718096"}}>
-                                        $120.00
-                                    </Typography>
-                                </Box>
-                                <Box sx={{display: "flex", gap: 1}}>
-                                    <Button
-                                        variant="contained"
-                                        color="primary"
-                                        size="small"
-                                        sx={{borderRadius: "20px", textTransform: "none", fontWeight: "bold"}}
-                                        onClick={() => {
-                                            /* Edit action */
-                                        }}
-                                    >
-                                        Edit
-                                    </Button>
-                                    <Button
-                                        variant="outlined"
-                                        color="error"
-                                        size="small"
-                                        sx={{borderRadius: "20px", textTransform: "none", fontWeight: "bold"}}
-                                        onClick={() => {
-                                            /* Delete action */
-                                        }}
-                                    >
-                                        Delete
-                                    </Button>
-                                </Box>
-                            </Box>
+                        <Paper sx={{
+                            p: 3,
+                            mb: 2,
+                            borderRadius: 3,
+                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                        }}>
+                            {mySelling.length > 0 ? (
+                                <>
+                                    {mySelling.map((item) => (
+                                        <Box 
+                                            key={item.id} 
+                                            sx={{
+                                                display: "flex", 
+                                                alignItems: "center", 
+                                                mb: 2, 
+                                                p: 2,
+                                                borderRadius: 2,
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(107, 70, 193, 0.04)',
+                                                },
+                                                "&:last-child": { mb: 0 }
+                                            }}
+                                        >
+                                            <Box
+                                                component="img"
+                                                src={item.imageUrls[0]}
+                                                alt={item.title}
+                                                sx={{
+                                                    width: 80, 
+                                                    height: 80, 
+                                                    objectFit: "cover", 
+                                                    borderRadius: 2,
+                                                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                                                }}
+                                            />
+                                            <Box sx={{ml: 2, flex: 1}}>
+                                                <Typography variant="h6" sx={{fontWeight: "bold", color: "#4a5568"}}>
+                                                    {item.title}
+                                                </Typography>
+                                                <Typography variant="body1" sx={{color: "#718096"}}>
+                                                    ${item.price.toFixed(2)}
+                                                </Typography>
+                                            </Box>
+                                            <Button
+                                                variant="outlined"
+                                                color="primary"
+                                                size="small"
+                                                sx={{
+                                                    borderRadius: "20px",
+                                                    textTransform: "none",
+                                                    fontWeight: "bold",
+                                                    borderColor: "#6b46c1",
+                                                    color: "#6b46c1",
+                                                    '&:hover': {
+                                                        borderColor: "#5a32b0",
+                                                        backgroundColor: "rgba(107, 70, 193, 0.04)"
+                                                    }
+                                                }}
+                                                onClick={() => navigate(`/item/${item.id}`)}
+                                            >
+                                                Edit
+                                            </Button>
+                                        </Box>
+                                    ))}
+                                    <Box sx={{display: "flex", justifyContent: "center", mt: 3}}>
+                                        <Button
+                                            variant="contained"
+                                            color="primary"
+                                            sx={{
+                                                borderRadius: "20px",
+                                                textTransform: "none",
+                                                fontWeight: "bold",
+                                                backgroundColor: "#6b46c1",
+                                                px: 4,
+                                                py: 1,
+                                                '&:hover': {
+                                                    backgroundColor: "#5a32b0"
+                                                }
+                                            }}
+                                            onClick={() => navigate("/myselling")}
+                                        >
+                                            View All Listings
+                                        </Button>
+                                    </Box>
+                                </>
+                            ) : (
+                                <Typography variant="body1" sx={{color: "#718096", textAlign: "center", py: 3}}>
+                                    No items for sale yet
+                                </Typography>
+                            )}
                         </Paper>
                     </Grid>
                     <Grid item xs={12} lg={6}>
-                        <Typography variant="h5" sx={{fontWeight: "bold", color: "#6b46c1", mb: 2}}>
+                        <Typography variant="h5" sx={{
+                            fontWeight: "bold",
+                            color: "#6b46c1",
+                            mb: 2,
+                            display: "flex",
+                            alignItems: "center",
+                        }}>
                             My Buying
                         </Typography>
-                        <Paper sx={{p: 2}}>
-                            <Box sx={{display: "flex", alignItems: "center"}}>
+                        <Paper sx={{
+                            p: 3,
+                            borderRadius: 3,
+                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                        }}>
+                            <Box sx={{
+                                display: "flex", 
+                                alignItems: "center",
+                                p: 2,
+                                borderRadius: 2,
+                                '&:hover': {
+                                    backgroundColor: 'rgba(107, 70, 193, 0.04)',
+                                }
+                            }}>
                                 <Box
                                     component="img"
                                     src="/assets/item2.webp"
                                     alt="Item 2"
-                                    sx={{width: 80, height: 80, objectFit: "cover", borderRadius: 2}}
+                                    sx={{
+                                        width: 80, 
+                                        height: 80, 
+                                        objectFit: "cover", 
+                                        borderRadius: 2,
+                                        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                                    }}
                                 />
                                 <Box sx={{ml: 2, flex: 1}}>
                                     <Typography variant="h6" sx={{fontWeight: "bold", color: "#4a5568"}}>
@@ -361,7 +537,15 @@ const Dashboard = () => {
                                         variant="contained"
                                         color="primary"
                                         size="small"
-                                        sx={{borderRadius: "20px", textTransform: "none", fontWeight: "bold"}}
+                                        sx={{
+                                            borderRadius: "20px",
+                                            textTransform: "none",
+                                            fontWeight: "bold",
+                                            backgroundColor: "#6b46c1",
+                                            '&:hover': {
+                                                backgroundColor: "#5a32b0"
+                                            }
+                                        }}
                                         onClick={() => {
                                             /* Details action */
                                         }}
@@ -372,7 +556,14 @@ const Dashboard = () => {
                                         variant="contained"
                                         color="success"
                                         size="small"
-                                        sx={{borderRadius: "20px", textTransform: "none", fontWeight: "bold"}}
+                                        sx={{
+                                            borderRadius: "20px",
+                                            textTransform: "none",
+                                            fontWeight: "bold",
+                                            '&:hover': {
+                                                backgroundColor: "#2f855a"
+                                            }
+                                        }}
                                         onClick={() => {
                                             /* Track action */
                                         }}

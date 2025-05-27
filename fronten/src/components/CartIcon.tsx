@@ -99,22 +99,27 @@ const CartIcon: React.FC<CartIconProps> = ({ color = 'primary' }) => {
 
   return (
     <>
-      <Tooltip title={itemCount > 0 ? "View cart" : "Your cart is empty"}>
-        <IconButton 
-          color={color} 
-          onClick={() => navigate('/cart')}
-          aria-label="shopping cart"
-          onMouseEnter={handleMouseEnter}
-        >
-          <Badge 
-            badgeContent={itemCount} 
-            color="error"
-            max={99}
+      <Box sx={{ display: 'inline-flex', position: 'relative' }}>
+        <Tooltip title={itemCount > 0 ? "View cart" : "Your cart is empty"}>
+          <IconButton
+            color={color}
+            onClick={() => navigate('/cart')}
+            aria-label="shopping cart"
+            onMouseEnter={handleMouseEnter}
+            size="medium"
+            sx={{ padding: '8px' }}
           >
-            <ShoppingCartIcon />
-          </Badge>
-        </IconButton>
-      </Tooltip>
+            <Badge
+              badgeContent={itemCount}
+              color="error"
+              max={99}
+              sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', height: '16px', minWidth: '16px' } }}
+            >
+              <ShoppingCartIcon fontSize="medium" />
+            </Badge>
+          </IconButton>
+        </Tooltip>
+      </Box>
 
       <Popover
         open={open}
@@ -131,8 +136,8 @@ const CartIcon: React.FC<CartIconProps> = ({ color = 'primary' }) => {
         PaperProps={{
           onMouseLeave: handleClose,
           elevation: 4,
-          sx: { 
-            width: 350, 
+          sx: {
+            width: 350,
             maxHeight: 400,
             borderRadius: 2,
             mt: 1,
@@ -160,7 +165,7 @@ const CartIcon: React.FC<CartIconProps> = ({ color = 'primary' }) => {
               {cartItems.slice(0, 4).map((item) => (
                 <ListItem key={item.id} divider alignItems="flex-start">
                   <ListItemAvatar>
-                    <Avatar 
+                    <Avatar
                       variant="rounded"
                       alt={item.title}
                       src={getImageUrl(item)}
@@ -169,10 +174,10 @@ const CartIcon: React.FC<CartIconProps> = ({ color = 'primary' }) => {
                   </ListItemAvatar>
                   <ListItemText
                     primary={
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          fontWeight: 600, 
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 600,
                           color: '#4a5568',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -266,4 +271,4 @@ const CartIcon: React.FC<CartIconProps> = ({ color = 'primary' }) => {
   );
 };
 
-export default CartIcon; 
+export default CartIcon;

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import polylogo from "./assets/poly-logo.webp";
+import { useNotifications } from "./services/NotificationContext";
 
 import {
   Box,
@@ -73,6 +74,7 @@ const CartPage: React.FC = () => {
   });
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const { unreadCount, fetchUnreadCount } = useNotifications();
 
   // Fetch cart items
   useEffect(() => {
@@ -100,6 +102,7 @@ const CartPage: React.FC = () => {
       });
 
       setCartItems(response.data);
+      await fetchUnreadCount();
     } catch (err) {
       console.error('Error fetching cart items:', err);
       setError('Failed to load your cart. Please try again later.');
@@ -309,7 +312,7 @@ const CartPage: React.FC = () => {
               </Badge>
             </IconButton>
             <IconButton color="primary">
-              <Badge badgeContent={3} color="error">
+              <Badge badgeContent={unreadCount} color="error">
                 <NotificationsIcon />
               </Badge>
             </IconButton>

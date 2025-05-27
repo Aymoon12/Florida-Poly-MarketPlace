@@ -188,7 +188,8 @@ public class ItemService {
 
 			User user = userRepository.findById( userId ).orElseThrow( () -> new RuntimeException( "User not found" ) );
 
-			List<Item> history = user.getItemHistory().stream().map( ViewHistory::getItem ).toList();
+			List<Item> history = user.getItemHistory().stream().map( ViewHistory::getItem )
+					.filter( item -> item.getStatus() == Status.ACTIVE ).toList();
 			return s3Service.getItemDtos( history );
 		} catch ( final Exception e ) {
 			log.error( e.getMessage(), e );
