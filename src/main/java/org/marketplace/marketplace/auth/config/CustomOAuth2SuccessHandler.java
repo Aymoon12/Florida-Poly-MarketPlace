@@ -32,10 +32,10 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
 		System.out.println( email );
 		String name = oauth2User.getAttribute( "name" );
 		assert name != null;
-		String[] lastfirst = name.split( "," );
-		System.out.println( lastfirst[0] );
-		System.out.println( lastfirst[1].substring( 1 ) );
-		name = lastfirst[1].substring( 1 ) + " " + lastfirst[0];
+		String[] last_first = name.split( "," );
+		System.out.println( last_first[0] );
+		System.out.println( last_first[1].substring( 1 ) );
+		name = last_first[1].substring( 1 ) + " " + last_first[0];
 
 		System.out.println();
 
