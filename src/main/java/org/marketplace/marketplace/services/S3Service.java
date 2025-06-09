@@ -33,7 +33,7 @@ public class S3Service {
 
 	private final AmazonS3 s3Client;
 
-	@Value( "${aws.s3.bucket.name}" )
+	@Value( "${aws.s3.bucket.name:ayman-marketplace-items}" )
 	private String bucketName;
 
 	@Value( "${aws.s3.presigned-url.expiry:900000}" )

@@ -76,4 +76,7 @@ public class Item {
 	@OneToMany( mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true )
 	private List<CartItem> cartItems = new ArrayList<>();
 
+	@OneToMany( mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true )
+	private List<SavedListing> savedBy = new ArrayList<>();
+
 }

@@ -171,6 +171,31 @@ const ItemDetailsPage: React.FC = () => {
         alert(`Processing purchase for ${quantity} x ${item.title}`);
     };
 
+    const handleSaveListing = async () => {
+        if (!item) return;
+
+        try {
+            const response = await axios.post('http://localhost:8080/api/v1/saved/save', null, {
+                params: {
+                    userId: localStorage.getItem('userId'),
+                    itemId: item.id
+                },
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (response.status === 200) {
+                alert("Listing saved successfully");
+            } else {
+                alert("Failed to save listing");
+            }
+        } catch (error) {
+            console.error("Error saving listing:", error);
+            alert("Failed to save listing");
+        }
+    }
+
     const handleAddToCart = async () => {
         // Implement add to cart functionality
         if (!item) return;
@@ -616,6 +641,32 @@ const ItemDetailsPage: React.FC = () => {
                             >
                                 Buy Now
                             </Button>
+                            
+                        </Box>
+                        <Button
+                                variant="outlined"
+                                color="primary"
+                                size="large"    
+                                fullWidth
+                                onClick={handleSaveListing}
+                                sx={{
+                                    py: 1.5,
+                                    borderColor: '#6b46c1',
+                                    color: '#6b46c1',
+                                    '&:hover': {
+                                        borderColor: '#5a32a3',
+                                        bgcolor: 'rgba(107, 70, 193, 0.04)'
+                                    },
+                                    borderRadius: 2,
+                                    textTransform: 'none',
+                                    fontWeight: 600
+                                }}
+                            >
+                                Save Listing
+                            </Button>
+
+                        <Box>
+                            
                         </Box>
 
                         {/* Seller Information */}

@@ -428,10 +428,12 @@ const CreateListing: React.FC = () => {
                                             <em>Select a Category</em>
                                         </MenuItem>
                                         <MenuItem value="Electronics">Electronics</MenuItem>
-                                        <MenuItem value="Books">Books</MenuItem>
+                                        <MenuItem value="Textbooks">Textbooks</MenuItem>
+                                        <MenuItem value="Fashion">Fashion (Apparel)</MenuItem>
+                                        <MenuItem value="Sports">Sports Gear</MenuItem>
                                         <MenuItem value="Collectibles">Collectibles</MenuItem>
-                                        <MenuItem value="Fashion">Fashion</MenuItem>
-                                        <MenuItem value="Other">Other</MenuItem>
+                                        <MenuItem value="Services">Services</MenuItem>
+                                        <MenuItem value="Other">Other (Dorm & Living)</MenuItem>
                                     </Select>
                                     <FormHelperText>Please select a category</FormHelperText>
                                 </FormControl>
