@@ -10,6 +10,4 @@ public class ItemRequest {
 	private final Double price;
 	private final String category;
 	private final String userId;
-	private final int quantity;
-
 }

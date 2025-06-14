@@ -1,4 +1,4 @@
-package org.marketplace.marketplace.controller;
+package org.marketplace.marketplace.controllers;
 
 import java.util.List;
 import java.util.Optional;

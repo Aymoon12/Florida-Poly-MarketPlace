@@ -12,6 +12,7 @@ import './index.css';
 import ViewHistory from "./ViewHistory";
 import NotificationsPage from "./NotificationsPage";
 import SettingsPage from "./SettingsPage";
+import InboxPage from './InboxPage';
 
 function App() {
     return (
@@ -30,6 +31,7 @@ function App() {
                     <Route path="/viewHistory" element={<ViewHistory/>}/>
                     <Route path="/notifications" element={<NotificationsPage/>}/>
                     <Route path="/settings" element={<SettingsPage/>}/>
+                    <Route path="/inbox" element={<InboxPage />} />
                 </Routes>
             </Router>
         </NotificationProvider>

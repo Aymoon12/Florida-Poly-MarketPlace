@@ -8,13 +8,13 @@ public enum Category {
 	ELECTRONICS(0),
 	
 	BOOKS(1), // For textbooks
-	
+
 	COLLECTIBLES(2),
-	
+
 	FASHION(3), // For apparel
-	
+
 	SPORTS(4), // For sports gear
-	
+
 	OTHER(5), // For dorm & living and other misc items
 	
 	SERVICES(6);
@@ -29,7 +29,7 @@ public enum Category {
 		if (category == null) {
 			return OTHER;
 		}
-		
+
 		return switch (category.toLowerCase()) {
 			case "electronics" -> ELECTRONICS;
 			case "books", "textbooks" -> BOOKS;

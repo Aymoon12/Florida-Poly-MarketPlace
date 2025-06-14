@@ -76,6 +76,8 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [mySelling, setMySelling] = useState<Item[]>([])
+    const [mySaved, setMySaved] = useState<Item[]>([])
+
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -102,28 +104,18 @@ const Dashboard = () => {
                     setMySelling(statsResponse.data.mySelling)
                 }
 
-                // // Fetch recent activity
-                // const activityResponse = await axios.get(`http://localhost:8080/api/v1/user/recentActivity`, {
-                //     params: {userId},
-                //     headers: {
-                //         Authorization: `Bearer ${localStorage.getItem("token")}`
-                //     }
-                // });
-                //
-                // if (activityResponse.data && Array.isArray(activityResponse.data)) {
-                //     setRecentActivity(activityResponse.data);
-                // }
-                //
-                // // Fetch user info
-                // const userResponse = await axios.get(`http://localhost:8080/api/v1/user/${userId}`, {
-                //     headers: {
-                //         Authorization: `Bearer ${localStorage.getItem("token")}`
-                //     }
-                // });
-                //
-                // if (userResponse.data && userResponse.data.name) {
-                //     setUsername(userResponse.data.name);
-                // }
+                const savedListingsResponse = await axios.get(`http://localhost:8080/api/v1/saved/last-five`, {
+                    params: {userId},
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`
+                    }
+                });
+
+                if (savedListingsResponse.status === 200) {
+                    setMySaved(savedListingsResponse.data);
+                }
+
+                
             } catch (err) {
                 console.error('Error fetching dashboard data:', err);
                 // Use default data if API fails
@@ -147,6 +139,28 @@ const Dashboard = () => {
 
         fetchDashboardData();
     }, []);
+
+
+    const handleRemoveSaved = (itemId: number) => {
+        return async () => {
+            try {
+                const userId = localStorage.getItem('userId');
+
+                const response = await axios.delete(`http://localhost:8080/api/v1/saved/unsave`, {
+                    params: {userId, itemId},
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`
+                    }
+                });
+                if(response.status === 200) {
+                    alert('Item removed from saved');
+                    window.location.reload();
+                }
+            } catch (err) {
+                console.error('Error removing saved item:', err);
+            }
+        };
+    }
 
     if (loading) {
         return (
@@ -496,82 +510,116 @@ const Dashboard = () => {
                             display: "flex",
                             alignItems: "center",
                         }}>
-                            My Buying
+                            My Saved
                         </Typography>
                         <Paper sx={{
                             p: 3,
                             borderRadius: 3,
                             boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
                         }}>
-                            <Box sx={{
-                                display: "flex", 
-                                alignItems: "center",
-                                p: 2,
-                                borderRadius: 2,
-                                '&:hover': {
-                                    backgroundColor: 'rgba(107, 70, 193, 0.04)',
-                                }
-                            }}>
-                                <Box
-                                    component="img"
-                                    src="/assets/item2.webp"
-                                    alt="Item 2"
-                                    sx={{
-                                        width: 80, 
-                                        height: 80, 
-                                        objectFit: "cover", 
-                                        borderRadius: 2,
-                                        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                                    }}
-                                />
-                                <Box sx={{ml: 2, flex: 1}}>
-                                    <Typography variant="h6" sx={{fontWeight: "bold", color: "#4a5568"}}>
-                                        Old Book Collection
-                                    </Typography>
-                                    <Typography variant="body1" sx={{color: "#718096"}}>
-                                        $60.00
-                                    </Typography>
-                                </Box>
-                                <Box sx={{display: "flex", gap: 1}}>
-                                    <Button
-                                        variant="contained"
-                                        color="primary"
-                                        size="small"
-                                        sx={{
-                                            borderRadius: "20px",
-                                            textTransform: "none",
-                                            fontWeight: "bold",
-                                            backgroundColor: "#6b46c1",
-                                            '&:hover': {
-                                                backgroundColor: "#5a32b0"
-                                            }
-                                        }}
-                                        onClick={() => {
-                                            /* Details action */
-                                        }}
-                                    >
-                                        Details
-                                    </Button>
-                                    <Button
-                                        variant="contained"
-                                        color="success"
-                                        size="small"
-                                        sx={{
-                                            borderRadius: "20px",
-                                            textTransform: "none",
-                                            fontWeight: "bold",
-                                            '&:hover': {
-                                                backgroundColor: "#2f855a"
-                                            }
-                                        }}
-                                        onClick={() => {
-                                            /* Track action */
-                                        }}
-                                    >
-                                        Track
-                                    </Button>
-                                </Box>
-                            </Box>
+                            {mySaved.length > 0 ? (
+                                <>
+                                    {mySaved.map((item) => (
+                                        <Box 
+                                            key={item.id} 
+                                            sx={{
+                                                display: "flex", 
+                                                alignItems: "center", 
+                                                mb: 2, 
+                                                p: 2,
+                                                borderRadius: 2,
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(107, 70, 193, 0.04)',
+                                                },
+                                                "&:last-child": { mb: 0 }
+                                            }}
+                                        >
+                                            <Box
+                                                component="img"
+                                                src={item.imageUrls[0]}
+                                                alt={item.title}
+                                                sx={{
+                                                    width: 80, 
+                                                    height: 80, 
+                                                    objectFit: "cover", 
+                                                    borderRadius: 2,
+                                                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                                                }}
+                                            />
+                                            <Box sx={{ml: 2, flex: 1}}>
+                                                <Typography variant="h6" sx={{fontWeight: "bold", color: "#4a5568"}}>
+                                                    {item.title}
+                                                </Typography>
+                                                <Typography variant="body1" sx={{color: "#718096"}}>
+                                                    ${item.price.toFixed(2)}
+                                                </Typography>
+                                            </Box>
+                                            <Button
+                                                variant="outlined"
+                                                color="primary"
+                                                size="small"
+                                                sx={{
+                                                    borderRadius: "20px",
+                                                    textTransform: "none",
+                                                    fontWeight: "bold",
+                                                    borderColor: "#6b46c1",
+                                                    color: "#6b46c1",
+                                                    '&:hover': {
+                                                        borderColor: "#5a32b0",
+                                                        backgroundColor: "rgba(107, 70, 193, 0.04)"
+                                                    }
+                                                }}
+                                                onClick={() => navigate(`/item/${item.id}`)}
+                                            >
+                                                View
+                                            </Button>
+                                            <Button
+                                                variant="outlined"
+                                                color="primary"
+                                                size="small"
+                                                sx={{
+                                                    borderRadius: "20px",
+                                                    textTransform: "none",
+                                                    fontWeight: "bold",
+                                                    borderColor: "#FF0000",
+                                                    color: "#FF0000",
+                                                    '&:hover': {
+                                                        borderColor: "#FF0000",
+                                                        backgroundColor: "rgba(217, 27, 27, 0.04)"
+                                                    }
+                                                }}
+                                                onClick={handleRemoveSaved(item.id)}
+                                            >
+                                                Remove
+                                            </Button>
+                                        </Box>
+                                    ))}
+                                    <Box sx={{display: "flex", justifyContent: "center", mt: 3}}>
+                                        <Button
+                                            variant="contained"
+                                            color="primary"
+                                            sx={{
+                                                borderRadius: "20px",
+                                                textTransform: "none",
+                                                fontWeight: "bold",
+                                                backgroundColor: "#6b46c1",
+                                                px: 4,
+                                                py: 1,
+                                                '&:hover': {
+                                                    backgroundColor: "#5a32b0"
+                                                }
+                                            }}
+                                            onClick={() => navigate("/myselling")}
+                                        >
+                                            View All Saved 
+                                        </Button>
+                                    </Box>
+                                </>
+                            ) : (
+                                <Typography variant="body1" sx={{color: "#718096", textAlign: "center", py: 3}}>
+                                    No items saved yet
+                                </Typography>
+                            )}
                         </Paper>
                     </Grid>
                 </Grid>

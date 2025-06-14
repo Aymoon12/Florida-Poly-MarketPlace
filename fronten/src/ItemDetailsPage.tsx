@@ -42,6 +42,7 @@ import CategoryIcon from '@mui/icons-material/Category';
 import CartIcon from './components/CartIcon';
 import axios from 'axios';
 import {format, formatDistance} from 'date-fns';
+import ChatService from './services/ChatService';
 
 interface ItemDetails {
     id: number;
@@ -71,6 +72,8 @@ const ItemDetailsPage: React.FC = () => {
     const [tabValue, setTabValue] = useState(0);
     const [similarItems, setSimilarItems] = useState<ItemDetails[]>([]);
     const [loadingSimilar, setLoadingSimilar] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
+    const [savedText, setSavedText] = useState('Save Listing');
 
     useEffect(() => {
         const fetchItemDetails = async () => {
@@ -105,7 +108,38 @@ const ItemDetailsPage: React.FC = () => {
             }
         };
 
+        const checkIfSaved = async () => {
+            if (!itemId) return;
+            const userId = localStorage.getItem('userId');
+            if (!userId) return;
+
+            try {
+                const response = await axios.get('http://localhost:8080/api/v1/saved/check', {
+                    params: {
+                        userId: userId,
+                        itemId: itemId
+                    },
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`
+                    }
+                });
+
+                if (response.status === 200) {
+                    setIsSaved(response.data);
+                    if (response.data) {
+                        setSavedText('Already Saved');
+                    } else {
+                        setSavedText('Save Listing');
+                    }
+                }
+            } catch (error) {
+                console.error("Error checking if listing is saved:", error);
+                setIsSaved(false);
+            }
+        }
+
         fetchItemDetails();
+        checkIfSaved();
 
         return () => {
             removeWatcher();
@@ -158,9 +192,38 @@ const ItemDetailsPage: React.FC = () => {
         setTabValue(newValue);
     };
 
-    const handleContactSeller = () => {
-        // Implement contact seller functionality
-        alert('Contact seller functionality would go here');
+    const handleContactSeller = async () => {
+        if (!item) return;
+        
+        try {
+            const userId = localStorage.getItem('userId');
+            if (!userId) {
+                alert('Please log in to contact the seller');
+                navigate('/login');
+                return;
+            }
+            
+            // Don't allow messaging yourself
+            if (item.seller?.id.toString() === userId) {
+                alert('You cannot message yourself');
+                return;
+            }
+            
+            // Create a new conversation or get existing one
+            const response = await ChatService.startConversation(
+                {
+                    itemId: item.id,
+                    initialMessage: `Hi, I'm interested in your "${item.title}". Is it still available?`,
+                    userId: userId
+                },
+            );
+            
+            // Navigate to the conversation
+            navigate(`/inbox?conversation=${response.id}`);
+        } catch (error) {
+            console.error('Error starting conversation:', error);
+            alert('Failed to start conversation. Please try again.');
+        }
     };
 
     const handleBuyNow = () => {
@@ -177,8 +240,8 @@ const ItemDetailsPage: React.FC = () => {
         try {
             const response = await axios.post('http://localhost:8080/api/v1/saved/save', null, {
                 params: {
-                    userId: localStorage.getItem('userId'),
-                    itemId: item.id
+                userId: localStorage.getItem('userId'),
+                itemId: item.id
                 },
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -186,7 +249,9 @@ const ItemDetailsPage: React.FC = () => {
             });
 
             if (response.status === 200) {
-                alert("Listing saved successfully");
+            alert("Listing saved successfully");
+            } else if (response.status === 208) {
+                alert("Listing already saved");
             } else {
                 alert("Failed to save listing");
             }
@@ -195,6 +260,8 @@ const ItemDetailsPage: React.FC = () => {
             alert("Failed to save listing");
         }
     }
+
+
 
     const handleAddToCart = async () => {
         // Implement add to cart functionality
@@ -649,6 +716,7 @@ const ItemDetailsPage: React.FC = () => {
                                 size="large"    
                                 fullWidth
                                 onClick={handleSaveListing}
+                                disabled={isSaved}
                                 sx={{
                                     py: 1.5,
                                     borderColor: '#6b46c1',
@@ -662,7 +730,7 @@ const ItemDetailsPage: React.FC = () => {
                                     fontWeight: 600
                                 }}
                             >
-                                Save Listing
+                                {savedText}
                             </Button>
 
                         <Box>

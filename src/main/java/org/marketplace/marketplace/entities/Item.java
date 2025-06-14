@@ -79,4 +79,7 @@ public class Item {
 	@OneToMany( mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true )
 	private List<SavedListing> savedBy = new ArrayList<>();
 
+	@OneToMany( mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true )
+	private List<Conversation> conversations = new ArrayList<>();
+
 }
