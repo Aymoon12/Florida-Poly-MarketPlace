@@ -1,23 +1,13 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-    Alert,
-    Box,
-    Button,
-    Grid,
-    Paper,
-    Typography,
-    useTheme,
-    alpha,
-} from "@mui/material";
-import HistoryIcon from "@mui/icons-material/History";
-import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
+import {useEffect, useState} from "react";
+import {useNavigate} from "react-router-dom";
+import {Alert, alpha, Box, Grid, Paper, Typography, useTheme,} from "@mui/material";
+import FavoriteIcon from "@mui/icons-material/Favorite";
 import axios from "axios";
-import { PageLayout, DashboardSidebar } from "./components/layout";
-import { ItemCard, ItemCardSkeleton, EmptyState } from "./components/common";
-import type { ItemType } from "./components/common";
+import {DashboardSidebar, PageLayout} from "./components/layout";
+import type {ItemType} from "./components/common";
+import {EmptyState, ItemCard, ItemCardSkeleton} from "./components/common";
 
-interface HistoryItem {
+interface SavedItem {
     id: number;
     title: string;
     description: string;
@@ -27,49 +17,49 @@ interface HistoryItem {
     createdAt: string;
 }
 
-const ViewHistory = () => {
+const SavedItemsPage = () => {
     const navigate = useNavigate();
     const theme = useTheme();
-    const [history, setHistory] = useState<HistoryItem[]>([]);
+    const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
-        const fetchHistory = async () => {
-            setLoading(true);
-            setError(null);
-
-            try {
-                const userId = localStorage.getItem('userId');
-                if (!userId) {
-                    setError('User not authenticated');
-                    setLoading(false);
-                    return;
-                }
-
-                const response = await axios.get(`http://localhost:8080/api/v1/item/getHistory`, {
-                    params: { userId },
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`
-                    }
-                });
-
-                if (response.data && Array.isArray(response.data)) {
-                    setHistory(response.data);
-                }
-            } catch (err) {
-                console.error('Error fetching history:', err);
-                setError('Failed to load your viewing history. Please try again later.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchHistory();
+        fetchSavedItems();
     }, []);
 
-    const mapToItemType = (item: HistoryItem): ItemType => ({
+    const fetchSavedItems = async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const userId = localStorage.getItem('userId');
+            if (!userId) {
+                setError('User not authenticated');
+                setLoading(false);
+                return;
+            }
+
+            const response = await axios.get(`http://localhost:8080/api/v1/saved/getAllSaved`, {
+                params: {userId},
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            });
+
+            if (response.data && Array.isArray(response.data)) {
+                setSavedItems(response.data);
+            }
+        } catch (err) {
+            console.error('Error fetching saved items:', err);
+            setError('Failed to load your saved items. Please try again later.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const mapToItemType = (item: SavedItem): ItemType => ({
         id: item.id,
         title: item.title,
         description: item.description,
@@ -78,29 +68,29 @@ const ViewHistory = () => {
         imageUrls: item.imageUrls,
     });
 
-    const handleClearHistory = async () => {
+    const handleUnsave = async (itemId: number) => {
         try {
             const userId = localStorage.getItem('userId');
             if (!userId) return;
 
-            await axios.delete(`http://localhost:8080/api/v1/item/clearHistory`, {
-                params: { userId },
+            await axios.delete(`http://localhost:8080/api/v1/saved/unsave`, {
+                params: {userId, itemId},
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`
                 }
             });
 
-            setHistory([]);
+            setSavedItems(savedItems.filter(item => item.id !== itemId));
         } catch (err) {
-            console.error('Error clearing history:', err);
+            console.error('Error unsaving item:', err);
         }
     };
 
     return (
         <PageLayout variant="dashboard" showCategories={false} showFooter={false}>
-            <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 64px)' }}>
+            <Box sx={{display: 'flex', minHeight: 'calc(100vh - 64px)'}}>
                 {/* Sidebar */}
-                <DashboardSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+                <DashboardSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)}/>
 
                 {/* Main Content */}
                 <Box sx={{
@@ -110,36 +100,25 @@ const ViewHistory = () => {
                     maxWidth: { md: 'calc(100% - 260px)' },
                 }}>
                     {error && (
-                        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+                        <Alert severity="error" sx={{mb: 3, borderRadius: 2}}>
                             {error}
                         </Alert>
                     )}
 
                     {/* Header */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                    <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4}}>
                         <Box>
-                            <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                                View History
+                            <Typography variant="h4" sx={{fontWeight: 700, color: 'text.primary'}}>
+                                Saved Items
                             </Typography>
-                            <Typography variant="body1" sx={{ color: 'text.secondary', mt: 0.5 }}>
-                                Items you've recently viewed
+                            <Typography variant="body1" sx={{color: 'text.secondary', mt: 0.5}}>
+                                Items you've saved for later
                             </Typography>
                         </Box>
-                        {history.length > 0 && (
-                            <Button
-                                variant="outlined"
-                                color="error"
-                                startIcon={<DeleteSweepIcon />}
-                                onClick={handleClearHistory}
-                                sx={{ borderRadius: 2, fontWeight: 600 }}
-                            >
-                                Clear History
-                            </Button>
-                        )}
                     </Box>
 
                     {/* Stats Card */}
-                    {!loading && history.length > 0 && (
+                    {!loading && savedItems.length > 0 && (
                         <Paper
                             elevation={0}
                             sx={{
@@ -157,26 +136,26 @@ const ViewHistory = () => {
                                     width: 48,
                                     height: 48,
                                     borderRadius: 2,
-                                    bgcolor: alpha(theme.palette.info.main, 0.1),
+                                    bgcolor: alpha(theme.palette.error.main, 0.1),
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                 }}
                             >
-                                <HistoryIcon sx={{ color: 'info.main' }} />
+                                <FavoriteIcon sx={{color: 'error.main'}}/>
                             </Box>
                             <Box>
-                                <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                                    {history.length}
+                                <Typography variant="h5" sx={{fontWeight: 700, color: 'text.primary'}}>
+                                    {savedItems.length}
                                 </Typography>
-                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                                    Items Viewed
+                                <Typography variant="body2" sx={{color: 'text.secondary'}}>
+                                    Saved Items
                                 </Typography>
                             </Box>
                         </Paper>
                     )}
 
-                    {/* History Grid */}
+                    {/* Saved Items Grid */}
                     <Paper
                         elevation={0}
                         sx={{
@@ -185,33 +164,35 @@ const ViewHistory = () => {
                             border: `1px solid ${theme.palette.divider}`,
                         }}
                     >
-                        <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
-                            Recently Viewed Items
+                        <Typography variant="h6" sx={{fontWeight: 600, color: 'text.primary', mb: 3}}>
+                            Your Favorites
                         </Typography>
 
                         {loading ? (
                             <Grid container spacing={2}>
                                 {[...Array(8)].map((_, index) => (
                                     <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-                                        <ItemCardSkeleton />
+                                        <ItemCardSkeleton/>
                                     </Grid>
                                 ))}
                             </Grid>
-                        ) : history.length === 0 ? (
+                        ) : savedItems.length === 0 ? (
                             <EmptyState
-                                type="history"
-                                title="No viewing history"
-                                description="You haven't viewed any items yet. Start browsing to see your history here!"
+                                type="favorites"
+                                title="No saved items"
+                                description="You haven't saved any items yet. Browse listings and save items you like!"
                                 actionLabel="Browse Items"
                                 onAction={() => navigate('/home')}
                             />
                         ) : (
                             <Grid container spacing={2}>
-                                {history.map((item) => (
+                                {savedItems.map((item) => (
                                     <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
                                         <ItemCard
                                             item={mapToItemType(item)}
                                             showFavorite={true}
+                                            isFavorite={true}
+                                            onFavoriteClick={() => handleUnsave(item.id)}
                                         />
                                     </Grid>
                                 ))}
@@ -224,4 +205,4 @@ const ViewHistory = () => {
     );
 };
 
-export default ViewHistory;
+export default SavedItemsPage;

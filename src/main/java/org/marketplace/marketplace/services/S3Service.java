@@ -5,15 +5,17 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
 import org.marketplace.marketplace.dto.ItemDto;
 import org.marketplace.marketplace.entities.Item;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,30 +25,28 @@ import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 @Service
-@RequiredArgsConstructor
 @Log4j2
 public class S3Service {
 
-	private final AmazonS3 s3Client;
+	@Autowired
+	private AmazonS3 s3Client;
 
-	@Value( "${aws.s3.bucket.name:ayman-marketplace-items}" )
+	@Autowired
+	@Lazy
+	private S3Service s3Service;
+
+	@Value( "${aws.s3.bucket.name}" )
 	private String bucketName;
 
 	@Value( "${aws.s3.presigned-url.expiry:900000}" )
 	private long presignedUrlExpiry; // Default 15 minutes in milliseconds
 
-	// Simple in-memory cache for image URLs to prevent constant regeneration
-	private final Map<Long, List<String>> itemImagesCache = new ConcurrentHashMap<>();
-	private final Map<Long, Long> cacheTimestamps = new ConcurrentHashMap<>();
-	private static final long CACHE_EXPIRY = 300000; // 5 minutes in milliseconds
-
 	/**
 	 * Generate a pre-signed URL for uploading an image directly from the browser
-	 * 
+	 *
 	 * @param itemId
 	 *            The item ID this image is for
 	 * @param contentType
@@ -82,14 +82,14 @@ public class S3Service {
 	}
 
 	/**
-	 * Upload a file directly to S3 from the server
-	 * 
+	 * Upload a file directly to S3 from the server. Evicts the image cache for this item.
+	 *
 	 * @param itemId
 	 *            The item ID this image is for
 	 * @param file
 	 *            The file to upload
-	 * @return The S3 object key of the uploaded file
 	 */
+	@CacheEvict( value = "itemImages", key = "#itemId" )
 	public void uploadFile( Long itemId, MultipartFile file ) {
 
 		try {
@@ -110,43 +110,29 @@ public class S3Service {
 	}
 
 	/**
-	 * Generate presigned URLs for retrieving images for an item
-	 * 
+	 * Generate presigned URLs for retrieving images for an item. Results are cached for 10 minutes.
+	 *
 	 * @param itemId
 	 *            The item ID
 	 * @return List of presigned URLs for GET operation
 	 */
+	@Cacheable( value = "itemImages", key = "#itemId" )
 	public List<String> getItemImagesUrls( Long itemId ) {
-
-		// Check if we have a valid cache entry
-		Long cachedTime = cacheTimestamps.get( itemId );
-		if ( cachedTime != null && System.currentTimeMillis() - cachedTime < CACHE_EXPIRY ) {
-			List<String> cachedUrls = itemImagesCache.get( itemId );
-			log.info( "Using cached image URLs for item: {}, count: {}", itemId,
-					cachedUrls != null ? cachedUrls.size() : 0 );
-			return cachedUrls != null ? cachedUrls : List.of();
-		}
 
 		try {
 			// List objects in the item's directory
 			List<String> objectKeys = s3Client.listObjects( bucketName, "items/" + itemId + "/" ).getObjectSummaries()
 					.stream().map( S3ObjectSummary::getKey ).toList();
 
-			// If no images found, return empty list and cache the result
+			// If no images found, return empty list
 			if ( objectKeys.isEmpty() ) {
 				log.info( "No images found for item: {}", itemId );
-				itemImagesCache.put( itemId, List.of() );
-				cacheTimestamps.put( itemId, System.currentTimeMillis() );
 				return List.of();
 			}
 
 			// Generate presigned URLs for each object
 			List<String> presignedUrls =
 					objectKeys.stream().map( this::generatePresignedGetUrl ).collect( Collectors.toList() );
-
-			// Cache the results
-			itemImagesCache.put( itemId, presignedUrls );
-			cacheTimestamps.put( itemId, System.currentTimeMillis() );
 
 			log.info( "Generated {} presigned image URLs for item: {}", presignedUrls.size(), itemId );
 			return presignedUrls;
@@ -159,7 +145,7 @@ public class S3Service {
 
 	/**
 	 * Get a presigned URL for a single image
-	 * 
+	 *
 	 * @param objectKey
 	 *            The S3 object key
 	 * @return Presigned URL for GET operation
@@ -185,11 +171,12 @@ public class S3Service {
 	}
 
 	/**
-	 * Delete all images associated with an item
-	 * 
+	 * Delete all images associated with an item. Also evicts the cache entry.
+	 *
 	 * @param itemId
 	 *            The item ID
 	 */
+	@CacheEvict( value = "itemImages", key = "#itemId" )
 	public void deleteItemImages( Long itemId ) {
 
 		try {
@@ -209,6 +196,27 @@ public class S3Service {
 		}
 	}
 
+	/**
+	 * Evict the image cache for a specific item. Useful when images are uploaded via presigned URL.
+	 *
+	 * @param itemId
+	 *            The item ID
+	 */
+	@CacheEvict( value = "itemImages", key = "#itemId" )
+	public void evictImageCache( Long itemId ) {
+
+		log.info( "Evicted image cache for item: {}", itemId );
+	}
+
+	/**
+	 * Evict all entries from the image cache.
+	 */
+	@CacheEvict( value = "itemImages", allEntries = true )
+	public void evictAllImageCache() {
+
+		log.info( "Evicted all entries from image cache" );
+	}
+
 	private String generateFileName( Long itemId ) {
 
 		return "image-" + UUID.randomUUID().toString() + ".jpg";
@@ -219,7 +227,8 @@ public class S3Service {
 
 		List<ItemDto> itemDtos = new ArrayList<>();
 		for ( Item item : recent ) {
-			List<String> imageUrls = this.getItemImagesUrls( item.getId() );
+			// Use self to go through Spring proxy for caching to work
+			List<String> imageUrls = s3Service.getItemImagesUrls( item.getId() );
 			itemDtos.add( ItemDto.from( item, imageUrls ) );
 		}
 		return itemDtos;

@@ -38,7 +38,6 @@ public class NotificationInitializer {
 		return args -> {
 			log.info( "Initializing notifications and settings for users..." );
 			createSettingsForExistingUsers();
-			createWelcomeNotificationsForUsers();
 			log.info( "Notification and settings initialization complete." );
 		};
 	}

@@ -34,6 +34,8 @@ public class ItemDto {
 
 	private final int watchers;
 
+	private final boolean isSaved;
+
 	public static ItemDto from( final Item item ) {
 
 		return ItemDto.builder().id( item.getId() ).title( item.getTitle() ).description( item.getDescription() )

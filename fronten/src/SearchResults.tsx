@@ -1,43 +1,36 @@
-import React, {useEffect, useState} from "react";
-import {Link, useLocation, useNavigate} from "react-router-dom";
-import polylogo from "./assets/poly-logo.webp";
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
-    AppBar,
-    Avatar,
-    Badge,
     Box,
     Button,
-    Card,
-    CardActionArea,
-    CardContent,
-    CardMedia,
     Chip,
-    CircularProgress,
-    Container,
+    Drawer,
     FormControl,
+    FormControlLabel,
     Grid,
     IconButton,
-    InputAdornment,
-    InputBase,
     InputLabel,
     MenuItem,
     Paper,
+    Radio,
+    RadioGroup,
     Select,
     SelectChangeEvent,
-    Skeleton,
-    Toolbar,
+    Slider,
     Typography,
+    useTheme,
+    alpha,
+    Divider,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import NotificationsIcon from "@mui/icons-material/Notifications";
-import FavoriteIcon from "@mui/icons-material/Favorite";
-import AddIcon from "@mui/icons-material/Add";
 import TuneIcon from "@mui/icons-material/Tune";
+import CloseIcon from "@mui/icons-material/Close";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import axios from "axios";
-import {useNotifications} from "./services/NotificationContext";
+import { PageLayout } from './components/layout';
+import { ItemCard, ItemCardSkeleton, EmptyState } from './components/common';
+import type { ItemType } from './components/common';
 
-// Item interface based on ItemDto from backend
 interface Item {
     id: number;
     title: string;
@@ -48,62 +41,57 @@ interface Item {
     seller: string;
     imageUrls: string[];
     createdAt: string;
-
 }
 
+const categories = [
+    'All Categories',
+    'Electronics',
+    'Textbooks',
+    'Fashion',
+    'Sports',
+    'Collectibles',
+    'Services',
+    'Other'
+];
+
 const SearchResults: React.FC = () => {
+    const theme = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Get query from URL
     const queryParams = new URLSearchParams(location.search);
     const queryFromUrl = queryParams.get("q") || "";
+    const categoryFromUrl = queryParams.get("category") || "";
 
-    // State variables
     const [searchQuery, setSearchQuery] = useState(queryFromUrl);
     const [items, setItems] = useState<Item[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [page, setPage] = useState(0);
-    const [hasMore, setHasMore] = useState(true);
+    const [loading, setLoading] = useState(true);
     const [sortOption, setSortOption] = useState("newest");
-    const [searchTimer, setSearchTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [searchResults, setSearchResults] = useState<Item[]>([]);
-    const [category, setCategory] = useState<string | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl || "All Categories");
+    const [priceRange, setPriceRange] = useState<number[]>([0, 500]);
+    const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
-    // Use notification context
-    const {unreadCount, fetchUnreadCount} = useNotifications();
-
-    // Replace the query-triggered useEffect with one that responds to location changes
     useEffect(() => {
         fetchSearchResults();
     }, [location.search]);
 
     const fetchSearchResults = async () => {
-        setIsLoading(true);
+        setLoading(true);
         try {
-            // Get the search query and category from URL
             const searchParams = new URLSearchParams(location.search);
             const query = searchParams.get('q');
             const categoryParam = searchParams.get('category');
 
             setSearchQuery(query || "");
-            setCategory(categoryParam);
-
-            // Call API to get search results
-            let endpoint = `http://localhost:8080/api/v1/item/search`;
-            let params: any = {};
-
-            if (query) {
-                params.query = query;
-            }
-
             if (categoryParam) {
-                params.category = categoryParam;
+                setSelectedCategory(categoryParam);
             }
 
-            const response = await axios.get(endpoint, {
+            let params: Record<string, string> = {};
+            if (query) params.query = query;
+            if (categoryParam) params.category = categoryParam;
+
+            const response = await axios.get(`http://localhost:8080/api/v1/item/search`, {
                 params,
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`
@@ -111,55 +99,27 @@ const SearchResults: React.FC = () => {
             });
 
             if (response.data && Array.isArray(response.data)) {
-                setSearchResults(response.data);
-                setItems(response.data)
+                setItems(response.data);
             }
-
-            // Fetch notification count
-            await fetchUnreadCount();
         } catch (error) {
             console.error("Error fetching search results:", error);
-            // Fallback to empty results or mock data if needed
-            setSearchResults([]);
+            setItems([]);
         } finally {
             setLoading(false);
-            setIsLoading(false);
         }
     };
 
-    // Handle search input change
-    const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchQuery(event.target.value);
-        // Reset pagination whenever search query changes
-        setPage(0);
-        setHasMore(true);
-    };
-
-    // Handle search form submission
-    const handleSearchSubmit = (event: React.FormEvent) => {
-        event.preventDefault();
-        if (searchQuery.trim()) {
-            // Reset pagination
-            setPage(0);
-            setHasMore(true);
-
-            // Update URL without reload
-            navigate(`/search?query=${encodeURIComponent(searchQuery.trim())}`, {replace: true});
-
-            // Results will be fetched by the useEffect
-        }
-    };
-
-    // Handle sort change
     const handleSortChange = (event: SelectChangeEvent) => {
-        setSortOption(event.target.value as string);
+        const newSort = event.target.value;
+        setSortOption(newSort);
 
-        // Apply sorting logic based on the selected option
         let sortedItems = [...items];
-
-        switch (event.target.value) {
+        switch (newSort) {
             case "newest":
                 sortedItems.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                break;
+            case "oldest":
+                sortedItems.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
                 break;
             case "price_asc":
                 sortedItems.sort((a, b) => a.price - b.price);
@@ -167,344 +127,327 @@ const SearchResults: React.FC = () => {
             case "price_desc":
                 sortedItems.sort((a, b) => b.price - a.price);
                 break;
-            default:
-                break;
         }
-
         setItems(sortedItems);
     };
 
-    // Handle load more button click
-    const handleLoadMore = () => {
-        if (!loading && hasMore) {
-            setPage(prevPage => prevPage + 1);
-            fetchSearchResults();
-        }
+    const handleCategoryChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const newCategory = event.target.value;
+        setSelectedCategory(newCategory);
     };
 
-    // Show appropriate messages based on search state
-    const renderContent = () => {
-        if (loading && items.length === 0) {
-            return (
-                <Box sx={{py: 4, textAlign: 'center'}}>
-                    <CircularProgress/>
-                    <Typography variant="body1" sx={{mt: 2}}>
-                        Searching for results...
-                    </Typography>
-                </Box>
+    const handlePriceChange = (_event: Event, newValue: number | number[]) => {
+        setPriceRange(newValue as number[]);
+    };
+
+    const applyFilters = () => {
+        let filteredItems = [...items];
+
+        if (selectedCategory !== "All Categories") {
+            filteredItems = filteredItems.filter(item =>
+                item.category.toLowerCase() === selectedCategory.toLowerCase()
             );
         }
 
-        if (error) {
-            return (
-                <Box sx={{py: 4, textAlign: 'center'}}>
-                    <Typography color="error" variant="body1">
-                        {error}
-                    </Typography>
-                </Box>
-            );
-        }
-
-        if (items.length === 0 && searchQuery.trim() !== '') {
-            return (
-                <Box sx={{py: 4, textAlign: 'center'}}>
-                    <Typography variant="body1">
-                        No results found for "{searchQuery}". Try different keywords or filters.
-                    </Typography>
-                </Box>
-            );
-        }
-
-        return (
-            <Grid container spacing={1.5}>
-                {items.map((item: Item) => (
-                    <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
-                        <Card sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
-                            <CardActionArea component={Link} to={`/item/${item.id}`}>
-                                <CardMedia
-                                    component="img"
-                                    height="180"
-                                    image={item.imageUrls && item.imageUrls.length > 0
-                                        ? item.imageUrls[0]
-                                        : `/assets/item${(item.id % 8) + 1}.webp`}
-                                    alt={item.title}
-                                    sx={{
-                                        objectFit: 'cover',
-                                        width: '100%',
-                                        aspectRatio: '1/1',
-                                        bgcolor: '#f8fafc'
-                                    }}
-                                />
-                                <CardContent sx={{p: 1.5, flexGrow: 1, display: 'flex', flexDirection: 'column'}}>
-                                    <Typography variant="subtitle1" sx={{fontWeight: 600, color: "#4a5568", mb: 1}}>
-                                        {item.title}
-                                    </Typography>
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            color: "#718096",
-                                            mb: 2,
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            display: '-webkit-box',
-                                            WebkitLineClamp: 2,
-                                            WebkitBoxOrient: 'vertical',
-                                        }}
-                                    >
-                                        {item.description}
-                                    </Typography>
-                                    <Box sx={{mt: 'auto'}}>
-                                        <Typography variant="h6" sx={{fontWeight: 700, color: "#6b46c1"}}>
-                                            ${item.price.toFixed(2)}
-                                        </Typography>
-                                        <Box sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            mt: 1
-                                        }}>
-                                            <Typography variant="body2" sx={{color: "#718096"}}>
-                                                {item.seller || "Seller"}
-                                            </Typography>
-                                            <Chip
-                                                label={item.category}
-                                                size="small"
-                                                sx={{
-                                                    fontSize: '0.75rem',
-                                                    backgroundColor: "#ebf4ff",
-                                                    color: "#3182ce",
-                                                    fontWeight: 600
-                                                }}
-                                            />
-                                        </Box>
-                                    </Box>
-                                </CardContent>
-                            </CardActionArea>
-                        </Card>
-                    </Grid>
-                ))}
-            </Grid>
+        filteredItems = filteredItems.filter(item =>
+            item.price >= priceRange[0] && item.price <= priceRange[1]
         );
+
+        setItems(filteredItems);
+        setFilterDrawerOpen(false);
     };
 
-    return (
-        <Box sx={{display: "flex", flexDirection: "column", minHeight: "100vh", bgcolor: "#f9fafb"}}>
-            {/* Navigation Bar - same as HomePage for consistency */}
-            <AppBar
-                position="fixed"
-                sx={{
-                    backgroundColor: "#fff",
-                    boxShadow: 1,
-                    zIndex: (theme) => theme.zIndex.drawer + 1,
-                }}
-            >
-                <Toolbar sx={{justifyContent: "space-between"}}>
-                    {/* Logo */}
-                    <Box sx={{display: "flex", alignItems: "center"}} onClick={() => navigate("/home")}
-                         style={{cursor: "pointer"}}>
-                        <Box
-                            component="img"
-                            src={polylogo}
-                            alt="Logo"
-                            sx={{height: 46, width: 46, mr: 1}}
-                        />
-                        <Typography variant="h6" sx={{fontWeight: 700, color: "#6b46c1"}}>
-                            PolyMart
-                        </Typography>
-                    </Box>
+    const clearFilters = () => {
+        setSelectedCategory("All Categories");
+        setPriceRange([0, 500]);
+        fetchSearchResults();
+        setFilterDrawerOpen(false);
+    };
 
-                    {/* Search Bar */}
-                    <Box sx={{flexGrow: 1, mx: 4}}>
-                        <Paper
-                            component="form"
-                            onSubmit={handleSearchSubmit}
-                            elevation={0}
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                backgroundColor: "#f0f0f0",
-                                borderRadius: "50px",
-                                overflow: "hidden",
-                                border: "1px solid #e0e0e0",
-                                '&:hover': {
-                                    boxShadow: '0 1px 6px rgba(32, 33, 36, 0.28)'
-                                }
-                            }}
-                        >
-                            <InputBase
-                                placeholder="Search for items..."
-                                value={searchQuery}
-                                onChange={handleSearchChange}
-                                sx={{flexGrow: 1, px: 2, py: 1, fontWeight: 500}}
-                                startAdornment={
-                                    <InputAdornment position="start">
-                                        <SearchIcon sx={{color: "#9ca3af"}}/>
-                                    </InputAdornment>
-                                }
-                            />
-                            <Button
-                                type="submit"
-                                variant="contained"
-                                sx={{
-                                    backgroundColor: "#6b46c1",
-                                    borderRadius: "0",
-                                    textTransform: "none",
-                                    px: 3,
-                                    py: 1.5,
-                                    height: '100%',
-                                    fontWeight: 600,
-                                    '&:hover': {
-                                        backgroundColor: "#5a32b0"
-                                    }
-                                }}
-                            >
-                                Search
-                            </Button>
-                        </Paper>
-                    </Box>
+    const mapItemToItemType = (item: Item): ItemType => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        price: item.price,
+        category: item.category,
+        seller: item.seller,
+        imageUrls: item.imageUrls,
+        status: item.status,
+    });
 
-                    {/* Navigation Icons */}
-                    <Box sx={{display: "flex", alignItems: "center", gap: 1, flexShrink: 0, minWidth: 'auto'}}>
-                        <IconButton color="primary" onClick={() => navigate("/myselling")} sx={{padding: '8px'}}>
-                            <Badge badgeContent={2} color="error">
-                                <FavoriteIcon/>
-                            </Badge>
-                        </IconButton>
-                        <IconButton color="primary">
-                            <Badge badgeContent={unreadCount} color="error">
-                                <NotificationsIcon/>
-                            </Badge>
-                        </IconButton>
-                        <IconButton color="primary">
-                            <Badge badgeContent={1} color="error">
-                                <ShoppingCartIcon/>
-                            </Badge>
-                        </IconButton>
-                        <Button
-                            variant="outlined"
-                            color="primary"
-                            startIcon={<AddIcon/>}
-                            sx={{
-                                ml: 1,
-                                borderRadius: 50,
-                                textTransform: "none",
-                                fontWeight: 600,
-                                borderColor: "#6b46c1",
-                                color: "#6b46c1",
-                                '&:hover': {
-                                    borderColor: "#5a32b0",
-                                    backgroundColor: "rgba(107, 70, 193, 0.04)"
-                                }
-                            }}
-                            onClick={() => navigate("/create-listing")}
-                        >
-                            Sell
-                        </Button>
-                        <Avatar
-                            sx={{
-                                width: 36,
-                                height: 36,
-                                ml: 1,
-                                cursor: "pointer",
-                                bgcolor: "#6b46c1"
-                            }}
-                            onClick={() => navigate("/settings")}
-                        >
-                            FP
-                        </Avatar>
-                    </Box>
-                </Toolbar>
-            </AppBar>
+    const getSearchTitle = () => {
+        if (searchQuery && selectedCategory !== "All Categories") {
+            return `"${searchQuery}" in ${selectedCategory}`;
+        }
+        if (searchQuery) {
+            return `"${searchQuery}"`;
+        }
+        if (selectedCategory !== "All Categories") {
+            return selectedCategory;
+        }
+        return "All Items";
+    };
 
-            {/* Main Content */}
-            <Box component="main" sx={{flexGrow: 1, pt: 12}}>
-                <Container maxWidth="xl">
-                    {/* Search Info & Filters */}
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            flexWrap: 'wrap',
-                            mb: 3
-                        }}
-                    >
-                        <Typography variant="h5" sx={{fontWeight: 700, color: "#4a5568"}}>
-                            {loading && page === 0 ? (
-                                <Skeleton width={250}/>
-                            ) : (
-                                `${items.length} results for "${searchQuery}"`
-                            )}
-                        </Typography>
-
-                        <Box sx={{display: 'flex', gap: 2, alignItems: 'center'}}>
-                            <FormControl variant="outlined" size="small" sx={{minWidth: 150}}>
-                                <InputLabel id="sort-label">Sort By</InputLabel>
-                                <Select
-                                    labelId="sort-label"
-                                    value={sortOption}
-                                    onChange={handleSortChange}
-                                    label="Sort By"
-                                >
-                                    <MenuItem value="newest">Newest First</MenuItem>
-                                    <MenuItem value="price_asc">Price: Low to High</MenuItem>
-                                    <MenuItem value="price_desc">Price: High to Low</MenuItem>
-                                </Select>
-                            </FormControl>
-
-                            <Button
-                                variant="outlined"
-                                startIcon={<TuneIcon/>}
-                                sx={{
-                                    borderRadius: 50,
-                                    textTransform: 'none',
-                                    fontWeight: 600,
-                                    color: '#6b46c1',
-                                    borderColor: '#e2e8f0',
-                                    px: 2
-                                }}
-                            >
-                                Filters
-                            </Button>
-                        </Box>
-                    </Box>
-
-                    {/* Search results */}
-                    {renderContent()}
-
-                    {/* Load more button */}
-                    {items.length > 10 && hasMore && (
-                        <Box sx={{mt: 4, textAlign: 'center'}}>
-                            <Button
-                                variant="outlined"
-                                onClick={handleLoadMore}
-                                disabled={loading}
-                                startIcon={loading ? <CircularProgress size={20}/> : null}
-                            >
-                                {loading ? 'Loading more...' : 'Load more results'}
-                            </Button>
-                        </Box>
-                    )}
-                </Container>
+    const FilterDrawerContent = () => (
+        <Box sx={{ width: 320, p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Filters
+                </Typography>
+                <IconButton onClick={() => setFilterDrawerOpen(false)}>
+                    <CloseIcon />
+                </IconButton>
             </Box>
 
-            {/* Footer - Simplified version */}
-            <Box
-                component="footer"
-                sx={{
-                    width: "100%",
-                    background: "linear-gradient(to right, #6b46c1, #5a67d8)",
-                    py: 3,
-                    mt: "auto",
-                }}
-            >
-                <Container maxWidth="lg">
-                    <Typography variant="body2" sx={{textAlign: "center", color: "#e9d8fd"}}>
-                        © {new Date().getFullYear()} Florida Polytechnic University MarketPlace. All rights reserved.
+            <Divider sx={{ mb: 3 }} />
+
+            {/* Category Filter */}
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>
+                Category
+            </Typography>
+            <RadioGroup value={selectedCategory} onChange={handleCategoryChange}>
+                {categories.map((cat) => (
+                    <FormControlLabel
+                        key={cat}
+                        value={cat}
+                        control={<Radio size="small" />}
+                        label={cat}
+                        sx={{
+                            '& .MuiFormControlLabel-label': {
+                                fontSize: '0.875rem',
+                                color: 'text.secondary',
+                            }
+                        }}
+                    />
+                ))}
+            </RadioGroup>
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Price Range Filter */}
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>
+                Price Range
+            </Typography>
+            <Box sx={{ px: 1 }}>
+                <Slider
+                    value={priceRange}
+                    onChange={handlePriceChange}
+                    valueLabelDisplay="auto"
+                    min={0}
+                    max={500}
+                    valueLabelFormat={(value) => `$${value}`}
+                />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        ${priceRange[0]}
                     </Typography>
-                </Container>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        ${priceRange[1]}+
+                    </Typography>
+                </Box>
+            </Box>
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Action Buttons */}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={clearFilters}
+                    sx={{ borderRadius: 2 }}
+                >
+                    Clear All
+                </Button>
+                <Button
+                    variant="contained"
+                    fullWidth
+                    onClick={applyFilters}
+                    sx={{ borderRadius: 2 }}
+                >
+                    Apply
+                </Button>
             </Box>
         </Box>
+    );
+
+    return (
+        <PageLayout showCategories={false}>
+            {/* Header */}
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <IconButton
+                    onClick={() => navigate(-1)}
+                    sx={{ mr: 2, color: 'primary.main' }}
+                >
+                    <ArrowBackIcon />
+                </IconButton>
+                <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                    Search Results
+                </Typography>
+            </Box>
+
+            {/* Search Info Bar */}
+            <Paper
+                elevation={0}
+                sx={{
+                    p: 3,
+                    mb: 4,
+                    borderRadius: 3,
+                    border: `1px solid ${theme.palette.divider}`,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 2,
+                }}
+            >
+                <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        {loading ? 'Searching...' : `${items.length} results for ${getSearchTitle()}`}
+                    </Typography>
+                    {(selectedCategory !== "All Categories" || priceRange[0] > 0 || priceRange[1] < 500) && (
+                        <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                            {selectedCategory !== "All Categories" && (
+                                <Chip
+                                    label={selectedCategory}
+                                    size="small"
+                                    onDelete={() => setSelectedCategory("All Categories")}
+                                    sx={{
+                                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                        color: 'primary.main',
+                                        '& .MuiChip-deleteIcon': {
+                                            color: 'primary.main',
+                                        }
+                                    }}
+                                />
+                            )}
+                            {(priceRange[0] > 0 || priceRange[1] < 500) && (
+                                <Chip
+                                    label={`$${priceRange[0]} - $${priceRange[1]}`}
+                                    size="small"
+                                    onDelete={() => setPriceRange([0, 500])}
+                                    sx={{
+                                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                        color: 'primary.main',
+                                        '& .MuiChip-deleteIcon': {
+                                            color: 'primary.main',
+                                        }
+                                    }}
+                                />
+                            )}
+                        </Box>
+                    )}
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <FormControl size="small" sx={{ minWidth: 160 }}>
+                        <InputLabel>Sort By</InputLabel>
+                        <Select
+                            value={sortOption}
+                            onChange={handleSortChange}
+                            label="Sort By"
+                        >
+                            <MenuItem value="newest">Newest First</MenuItem>
+                            <MenuItem value="oldest">Oldest First</MenuItem>
+                            <MenuItem value="price_asc">Price: Low to High</MenuItem>
+                            <MenuItem value="price_desc">Price: High to Low</MenuItem>
+                        </Select>
+                    </FormControl>
+
+                    <Button
+                        variant="outlined"
+                        startIcon={<TuneIcon />}
+                        onClick={() => setFilterDrawerOpen(true)}
+                        sx={{
+                            borderRadius: 2,
+                            fontWeight: 500,
+                        }}
+                    >
+                        Filters
+                    </Button>
+                </Box>
+            </Paper>
+
+            {/* Results Grid */}
+            {loading ? (
+                <Grid container spacing={3}>
+                    {[...Array(8)].map((_, index) => (
+                        <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
+                            <ItemCardSkeleton />
+                        </Grid>
+                    ))}
+                </Grid>
+            ) : items.length === 0 ? (
+                <EmptyState
+                    type="search"
+                    title="No results found"
+                    description={`We couldn't find any items matching "${searchQuery}". Try different keywords or browse categories.`}
+                    actionLabel="Browse All Items"
+                    onAction={() => navigate('/home')}
+                />
+            ) : (
+                <Grid container spacing={3}>
+                    {items.map((item) => (
+                        <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
+                            <ItemCard
+                                item={mapItemToItemType(item)}
+                                onClick={() => navigate(`/item/${item.id}`)}
+                            />
+                        </Grid>
+                    ))}
+                </Grid>
+            )}
+
+            {/* Category Quick Filters */}
+            {!loading && items.length > 0 && (
+                <Box sx={{ mt: 6 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', mb: 2 }}>
+                        Refine by Category
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        {categories.slice(1).map((cat) => (
+                            <Chip
+                                key={cat}
+                                label={cat}
+                                clickable
+                                onClick={() => {
+                                    setSelectedCategory(cat);
+                                    navigate(`/search?category=${encodeURIComponent(cat)}`);
+                                }}
+                                sx={{
+                                    borderRadius: 2,
+                                    fontWeight: 500,
+                                    bgcolor: selectedCategory === cat
+                                        ? 'primary.main'
+                                        : theme.palette.mode === 'light'
+                                            ? theme.palette.grey[100]
+                                            : theme.palette.grey[800],
+                                    color: selectedCategory === cat
+                                        ? 'white'
+                                        : 'text.primary',
+                                    '&:hover': {
+                                        bgcolor: selectedCategory === cat
+                                            ? 'primary.dark'
+                                            : theme.palette.mode === 'light'
+                                                ? theme.palette.grey[200]
+                                                : theme.palette.grey[700],
+                                    }
+                                }}
+                            />
+                        ))}
+                    </Box>
+                </Box>
+            )}
+
+            {/* Filter Drawer */}
+            <Drawer
+                anchor="right"
+                open={filterDrawerOpen}
+                onClose={() => setFilterDrawerOpen(false)}
+            >
+                <FilterDrawerContent />
+            </Drawer>
+        </PageLayout>
     );
 };
 

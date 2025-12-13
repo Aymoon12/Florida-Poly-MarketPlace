@@ -1,39 +1,34 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
 import polylogo from "./assets/poly-logo.webp"
 import { motion } from "framer-motion";
-import { 
-    Box, 
-    Button, 
-    Typography, 
-    Container, 
-    Grid, 
-    Card, 
-    CardContent, 
-    Avatar, 
-    IconButton, 
+import {
+    Box,
+    Button,
+    Typography,
+    Container,
+    Grid,
+    Card,
+    CardContent,
+    Avatar,
+    IconButton,
     Chip,
     Divider,
     TextField,
     InputAdornment,
-    Stack,
-    AppBar,
-    Toolbar,
     List,
     ListItem,
-    Link
+    Link,
+    useTheme,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import DevicesIcon from "@mui/icons-material/Devices";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import SchoolIcon from "@mui/icons-material/School";
 import LocalMallIcon from "@mui/icons-material/LocalMall";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import SecurityIcon from "@mui/icons-material/Security";
 import PeopleIcon from "@mui/icons-material/People";
 import SpeedIcon from "@mui/icons-material/Speed";
 import ForumIcon from "@mui/icons-material/Forum";
-import EmailIcon from "@mui/icons-material/Email";
 import StarIcon from "@mui/icons-material/Star";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import TwitterIcon from "@mui/icons-material/Twitter";
@@ -41,6 +36,9 @@ import InstagramIcon from "@mui/icons-material/Instagram";
 import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import HomeIcon from "@mui/icons-material/Home";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import { useThemeMode } from "./theme";
 
 const fadeIn = {
     hidden: { opacity: 0 },
@@ -68,10 +66,11 @@ const itemVariant = {
 };
 
 const LandingPage = () => {
-    const navigate = useNavigate();
+    const theme = useTheme();
+    const { mode, toggleTheme } = useThemeMode();
     const [activeCategory, setActiveCategory] = useState("All");
     const [searchQuery, setSearchQuery] = useState("");
-    
+
     const categories = [
         { name: "All", icon: <LocalMallIcon /> },
         { name: "Electronics", icon: <DevicesIcon /> },
@@ -80,7 +79,7 @@ const LandingPage = () => {
         { name: "Furniture", icon: <HomeIcon /> },
         { name: "Services", icon: <AttachMoneyIcon /> },
     ];
-    
+
     const featuredItems = [
         {
             id: 1,
@@ -143,7 +142,7 @@ const LandingPage = () => {
             seller: "Sarah Chen"
         }
     ];
-    
+
     const testimonials = [
         {
             name: "Sarah Johnson",
@@ -187,20 +186,51 @@ const LandingPage = () => {
         window.location.href = "http://localhost:8080/oauth2/authorization/azure-dev";
     };
 
+    const features = [
+        {
+            icon: <SecurityIcon fontSize="large" sx={{ color: theme.palette.primary.main }} />,
+            title: "Secure Transactions",
+            description: "Every exchange is protected with university verification and secure payment options.",
+            color: theme.palette.mode === 'light' ? '#E9D5FF' : 'rgba(139, 92, 246, 0.2)'
+        },
+        {
+            icon: <PeopleIcon fontSize="large" sx={{ color: theme.palette.info.main }} />,
+            title: "Trusted Community",
+            description: "Trade exclusively with verified Florida Polytechnic University students and faculty.",
+            color: theme.palette.mode === 'light' ? '#DBEAFE' : 'rgba(59, 130, 246, 0.2)'
+        },
+        {
+            icon: <SpeedIcon fontSize="large" sx={{ color: theme.palette.success.main }} />,
+            title: "Lightning Fast",
+            description: "Our optimized platform ensures quick listings and rapid responses.",
+            color: theme.palette.mode === 'light' ? '#D1FAE5' : 'rgba(16, 185, 129, 0.2)'
+        },
+        {
+            icon: <ForumIcon fontSize="large" sx={{ color: theme.palette.warning.main }} />,
+            title: "Direct Communication",
+            description: "Built-in messaging allows for seamless coordination between buyers and sellers.",
+            color: theme.palette.mode === 'light' ? '#FEF3C7' : 'rgba(245, 158, 11, 0.2)'
+        }
+    ];
+
     return (
-        <Box sx={{ overflowX: "hidden", bgcolor: "#f9fafb" }}>
+        <Box sx={{ overflowX: "hidden", bgcolor: theme.palette.background.default }}>
             {/* Navbar */}
-            <Box 
-                component="header" 
-                sx={{ 
-                    position: "fixed", 
-                    top: 0, 
-                    left: 0, 
-                    right: 0, 
-                    zIndex: 100, 
-                    bgcolor: "rgba(255, 255, 255, 0.9)",
+            <Box
+                component="header"
+                sx={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 100,
+                    bgcolor: theme.palette.mode === 'light'
+                        ? "rgba(255, 255, 255, 0.9)"
+                        : "rgba(17, 24, 39, 0.9)",
                     backdropFilter: "blur(8px)",
-                    boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)"
+                    boxShadow: theme.palette.mode === 'light'
+                        ? "0 2px 10px rgba(0, 0, 0, 0.05)"
+                        : "0 2px 10px rgba(0, 0, 0, 0.3)"
                 }}
             >
                 <Container maxWidth="xl">
@@ -218,124 +248,100 @@ const LandingPage = () => {
                                 animate={{ x: 0, opacity: 1 }}
                                 transition={{ delay: 0.2, duration: 0.5 }}
                             >
-                                <Typography 
-                                    variant="h5" 
-                                    sx={{ 
-                                        ml: 1.5, 
-                                        fontWeight: 700, 
-                                        color: "#6b46c1",
+                                <Typography
+                                    variant="h5"
+                                    sx={{
+                                        ml: 1.5,
+                                        fontWeight: 700,
+                                        color: theme.palette.primary.main,
                                         display: "flex",
                                         alignItems: "center"
                                     }}
                                 >
-                                    Poly<span style={{ color: "#4a5568" }}>Mart</span>
+                                    Poly<span style={{ color: theme.palette.text.primary }}>Mart</span>
                                 </Typography>
                             </motion.div>
                         </Box>
-                        
+
                         <Box sx={{ display: { xs: "none", md: "flex" }, gap: 4 }}>
-                            <Button 
-                                variant="text" 
-                                href="#features" 
-                                sx={{ 
-                                    color: "#4a5568", 
-                                    fontWeight: 600,
-                                    "&:hover": { color: "#6b46c1" }
-                                }}
-                            >
-                                Features
-                            </Button>
-                            <Button 
-                                variant="text" 
-                                href="#marketplace" 
-                                sx={{ 
-                                    color: "#4a5568", 
-                                    fontWeight: 600,
-                                    "&:hover": { color: "#6b46c1" }
-                                }}
-                            >
-                                Marketplace
-                            </Button>
-                            <Button 
-                                variant="text" 
-                                href="#testimonials" 
-                                sx={{ 
-                                    color: "#4a5568", 
-                                    fontWeight: 600,
-                                    "&:hover": { color: "#6b46c1" }
-                                }}
-                            >
-                                Testimonials
-                            </Button>
-                            <Button 
-                                variant="text" 
-                                href="#contact" 
-                                sx={{ 
-                                    color: "#4a5568", 
-                                    fontWeight: 600,
-                                    "&:hover": { color: "#6b46c1" }
-                                }}
-                            >
-                                Contact
-                            </Button>
+                            {["Features", "Marketplace", "Testimonials", "Contact"].map((item) => (
+                                <Button
+                                    key={item}
+                                    variant="text"
+                                    href={`#${item.toLowerCase()}`}
+                                    sx={{
+                                        color: theme.palette.text.secondary,
+                                        fontWeight: 600,
+                                        "&:hover": { color: theme.palette.primary.main }
+                                    }}
+                                >
+                                    {item}
+                                </Button>
+                            ))}
                         </Box>
-                        
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: 0.4, duration: 0.4 }}
-                        >
-                            <Button 
-                                variant="contained" 
-                                onClick={handleLogin}
-                                sx={{ 
-                                    bgcolor: "#6b46c1", 
-                                    color: "white",
-                                    fontWeight: 600,
-                                    borderRadius: 50,
-                                    px: 3,
-                                    "&:hover": { bgcolor: "#5a32a3" }
-                                }}
+
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <IconButton
+                                onClick={toggleTheme}
+                                sx={{ color: theme.palette.text.secondary }}
                             >
-                                Sign In
-                            </Button>
-                        </motion.div>
+                                {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
+                            </IconButton>
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ delay: 0.4, duration: 0.4 }}
+                            >
+                                <Button
+                                    variant="contained"
+                                    onClick={handleLogin}
+                                    sx={{
+                                        borderRadius: 50,
+                                        px: 3,
+                                    }}
+                                >
+                                    Sign In
+                                </Button>
+                            </motion.div>
+                        </Box>
                     </Box>
                 </Container>
             </Box>
 
             {/* Hero Section */}
-            <Box 
-                sx={{ 
-                    pt: 12, 
-                    pb: 6, 
-                    background: "linear-gradient(135deg, #6b46c1 0%, #805ad5 100%)",
+            <Box
+                sx={{
+                    pt: 12,
+                    pb: 6,
+                    background: theme.palette.mode === 'light'
+                        ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`
+                        : `linear-gradient(135deg, ${theme.palette.grey[900]} 0%, ${theme.palette.grey[800]} 100%)`,
                     color: "white",
                     overflow: "hidden",
                     position: "relative"
                 }}
             >
-                <Box 
-                    sx={{ 
-                        position: "absolute", 
-                        top: 0, 
-                        left: 0, 
-                        right: 0, 
-                        bottom: 0, 
-                        opacity: 0.1, 
+                <Box
+                    sx={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        opacity: 0.1,
                         backgroundImage: "url('/assets/pattern.png')",
                         backgroundSize: "cover"
-                    }} 
+                    }}
                 />
-                
+
                 <Container maxWidth="xl" sx={{ position: "relative" }}>
                     <Grid container spacing={4} alignItems="center">
                         <Grid item xs={12} md={6}>
                             <motion.div initial="hidden" animate="visible" variants={fadeIn}>
-                                <Typography 
-                                    variant="h2" 
-                                    sx={{ 
-                                        fontWeight: 800, 
+                                <Typography
+                                    variant="h2"
+                                    sx={{
+                                        fontWeight: 800,
                                         mb: 2,
                                         background: "linear-gradient(90deg, #ffffff 0%, #e2e8f0 100%)",
                                         backgroundClip: "text",
@@ -347,27 +353,27 @@ const LandingPage = () => {
                                     Campus Marketplace <br />Reimagined
                                 </Typography>
                             </motion.div>
-                            
+
                             <motion.div initial="hidden" animate="visible" variants={slideIn}>
                                 <Typography variant="h6" sx={{ mb: 4, color: "rgba(255,255,255,0.9)", fontWeight: 400, maxWidth: 550 }}>
                                     The premier marketplace platform for Florida Polytechnic University students.
                                     Buy, sell, and exchange items with your campus community.
                                 </Typography>
                             </motion.div>
-                            
-                            <motion.div 
+
+                            <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.5, duration: 0.5 }}
                             >
                                 <Box sx={{ display: "flex", gap: 2, flexWrap: { xs: "wrap", sm: "nowrap" } }}>
-                                    <Button 
-                                        variant="contained" 
-                                        size="large" 
-                        onClick={handleLogin}
-                                        sx={{ 
-                                            bgcolor: "white", 
-                                            color: "#6b46c1",
+                                    <Button
+                                        variant="contained"
+                                        size="large"
+                                        onClick={handleLogin}
+                                        sx={{
+                                            bgcolor: "white",
+                                            color: theme.palette.primary.main,
                                             fontWeight: 700,
                                             borderRadius: 3,
                                             px: 4,
@@ -377,18 +383,18 @@ const LandingPage = () => {
                                     >
                                         Get Started
                                     </Button>
-                                    <Button 
-                                        variant="outlined" 
+                                    <Button
+                                        variant="outlined"
                                         size="large"
                                         href="#features"
-                                        sx={{ 
-                                            borderColor: "rgba(255,255,255,0.6)", 
+                                        sx={{
+                                            borderColor: "rgba(255,255,255,0.6)",
                                             color: "white",
                                             fontWeight: 600,
                                             borderRadius: 3,
                                             px: 4,
                                             py: 1.5,
-                                            "&:hover": { 
+                                            "&:hover": {
                                                 borderColor: "white",
                                                 bgcolor: "rgba(255,255,255,0.1)"
                                             }
@@ -398,8 +404,8 @@ const LandingPage = () => {
                                     </Button>
                                 </Box>
                             </motion.div>
-                            
-                            <motion.div 
+
+                            <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.8, duration: 0.5 }}
@@ -407,12 +413,12 @@ const LandingPage = () => {
                                 <Box sx={{ display: "flex", alignItems: "center", mt: 4 }}>
                                     <Box sx={{ display: "flex", mr: 2 }}>
                                         {[1, 2, 3].map((i) => (
-                                            <Avatar 
+                                            <Avatar
                                                 key={i}
                                                 src={`/assets/avatar${i}.webp`}
-                                                sx={{ 
-                                                    width: 36, 
-                                                    height: 36, 
+                                                sx={{
+                                                    width: 36,
+                                                    height: 36,
                                                     border: "2px solid white",
                                                     ml: i === 1 ? 0 : -1.5
                                                 }}
@@ -425,19 +431,19 @@ const LandingPage = () => {
                                 </Box>
                             </motion.div>
                         </Grid>
-                        
+
                         <Grid item xs={12} md={6}>
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 0.3, duration: 0.8 }}
                             >
-                                <Box 
-                                    component="img" 
-                                    src="/assets/hero-image.webp" 
+                                <Box
+                                    component="img"
+                                    src="/assets/hero-image.webp"
                                     alt="Campus Marketplace"
-                                    sx={{ 
-                                        width: "100%", 
+                                    sx={{
+                                        width: "100%",
                                         maxWidth: 560,
                                         borderRadius: 4,
                                         boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.3)",
@@ -453,19 +459,21 @@ const LandingPage = () => {
             </Box>
 
             {/* Search Bar Section */}
-            <Box sx={{ py: 6, bgcolor: "#f9fafb" }}>
+            <Box sx={{ py: 6, bgcolor: theme.palette.background.default }}>
                 <Container maxWidth="md">
                     <motion.div
                         initial={{ y: 30, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ duration: 0.8 }}
                     >
-                        <Box 
-                            sx={{ 
-                                p: 2, 
-                                borderRadius: 3, 
-                                bgcolor: "white",
-                                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+                        <Box
+                            sx={{
+                                p: 2,
+                                borderRadius: 3,
+                                bgcolor: theme.palette.background.paper,
+                                boxShadow: theme.palette.mode === 'light'
+                                    ? "0 10px 25px -5px rgba(0, 0, 0, 0.1)"
+                                    : "0 10px 25px -5px rgba(0, 0, 0, 0.4)",
                                 display: "flex",
                                 flexDirection: { xs: "column", sm: "row" },
                                 alignItems: "center",
@@ -481,13 +489,9 @@ const LandingPage = () => {
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <SearchIcon sx={{ color: "#6b46c1" }} />
+                                            <SearchIcon sx={{ color: theme.palette.primary.main }} />
                                         </InputAdornment>
                                     ),
-                                    sx: { 
-                                        borderRadius: 3,
-                                        "& fieldset": { border: "1px solid #e2e8f0" }
-                                    }
                                 }}
                             />
                             <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "center" }}>
@@ -498,11 +502,18 @@ const LandingPage = () => {
                                         icon={category.icon}
                                         onClick={() => setActiveCategory(category.name)}
                                         sx={{
-                                            bgcolor: activeCategory === category.name ? "#6b46c1" : "white",
-                                            color: activeCategory === category.name ? "white" : "#4a5568",
+                                            bgcolor: activeCategory === category.name
+                                                ? theme.palette.primary.main
+                                                : theme.palette.background.paper,
+                                            color: activeCategory === category.name
+                                                ? "white"
+                                                : theme.palette.text.secondary,
                                             fontWeight: 600,
+                                            border: `1px solid ${theme.palette.divider}`,
                                             "& .MuiChip-icon": {
-                                                color: activeCategory === category.name ? "white" : "#6b46c1"
+                                                color: activeCategory === category.name
+                                                    ? "white"
+                                                    : theme.palette.primary.main
                                             }
                                         }}
                                     />
@@ -514,26 +525,26 @@ const LandingPage = () => {
             </Box>
 
             {/* Features Section */}
-            <Box id="features" sx={{ py: 8, bgcolor: "white" }}>
+            <Box id="features" sx={{ py: 8, bgcolor: theme.palette.background.paper }}>
                 <Container maxWidth="lg">
                     <Box sx={{ textAlign: "center", mb: 6 }}>
-                        <Chip 
-                            label="Features" 
-                            sx={{ 
-                                bgcolor: "#f3e8ff", 
-                                color: "#6b46c1", 
+                        <Chip
+                            label="Features"
+                            sx={{
+                                bgcolor: theme.palette.mode === 'light' ? '#F3E8FF' : 'rgba(139, 92, 246, 0.2)',
+                                color: theme.palette.primary.main,
                                 fontWeight: 600,
                                 mb: 2
-                            }} 
+                            }}
                         />
-                        <Typography variant="h3" sx={{ fontWeight: 700, mb: 2, color: "#2d3748" }}>
+                        <Typography variant="h3" sx={{ fontWeight: 700, mb: 2, color: theme.palette.text.primary }}>
                             Why Choose PolyMart?
                         </Typography>
-                        <Typography 
-                            variant="body1" 
-                            sx={{ 
-                                color: "#718096", 
-                                maxWidth: 660, 
+                        <Typography
+                            variant="body1"
+                            sx={{
+                                color: theme.palette.text.secondary,
+                                maxWidth: 660,
                                 mx: "auto",
                                 fontSize: "1.1rem"
                             }}
@@ -542,40 +553,15 @@ const LandingPage = () => {
                             a seamless, secure, and intuitive marketplace experience.
                         </Typography>
                     </Box>
-                    
-                    <motion.div 
-                        initial="hidden" 
+
+                    <motion.div
+                        initial="hidden"
                         whileInView="visible"
                         viewport={{ once: true, amount: 0.2 }}
                         variants={staggerContainer}
                     >
                         <Grid container spacing={4}>
-                            {[
-                                {
-                                    icon: <SecurityIcon fontSize="large" sx={{ color: "#6b46c1" }} />,
-                                    title: "Secure Transactions",
-                                    description: "Every exchange is protected with university verification and secure payment options.",
-                                    color: "#e9d8fd"
-                                },
-                                {
-                                    icon: <PeopleIcon fontSize="large" sx={{ color: "#3182ce" }} />,
-                                    title: "Trusted Community",
-                                    description: "Trade exclusively with verified Florida Polytechnic University students and faculty.",
-                                    color: "#bee3f8"
-                                },
-                                {
-                                    icon: <SpeedIcon fontSize="large" sx={{ color: "#38a169" }} />,
-                                    title: "Lightning Fast",
-                                    description: "Our optimized platform ensures quick listings and rapid responses.",
-                                    color: "#c6f6d5"
-                                },
-                                {
-                                    icon: <ForumIcon fontSize="large" sx={{ color: "#dd6b20" }} />,
-                                    title: "Direct Communication",
-                                    description: "Built-in messaging allows for seamless coordination between buyers and sellers.",
-                                    color: "#feebc8"
-                                }
-                            ].map((feature, index) => (
+                            {features.map((feature, index) => (
                                 <Grid item xs={12} sm={6} md={3} key={index}>
                                     <motion.div variants={itemVariant}>
                                         <Card
@@ -586,19 +572,21 @@ const LandingPage = () => {
                                                 flexDirection: "column",
                                                 borderRadius: 4,
                                                 p: 3,
-                                                border: "1px solid #e2e8f0",
+                                                border: `1px solid ${theme.palette.divider}`,
                                                 transition: "all 0.3s",
                                                 "&:hover": {
                                                     transform: "translateY(-8px)",
-                                                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)"
+                                                    boxShadow: theme.palette.mode === 'light'
+                                                        ? "0 20px 25px -5px rgba(0, 0, 0, 0.1)"
+                                                        : "0 20px 25px -5px rgba(0, 0, 0, 0.4)"
                                                 }
                                             }}
                                         >
-                                            <Box 
-                                                sx={{ 
-                                                    bgcolor: feature.color, 
-                                                    width: 60, 
-                                                    height: 60, 
+                                            <Box
+                                                sx={{
+                                                    bgcolor: feature.color,
+                                                    width: 60,
+                                                    height: 60,
                                                     borderRadius: 2,
                                                     display: "flex",
                                                     alignItems: "center",
@@ -608,10 +596,10 @@ const LandingPage = () => {
                                             >
                                                 {feature.icon}
                                             </Box>
-                                            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: "#2d3748" }}>
+                                            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: theme.palette.text.primary }}>
                                                 {feature.title}
                                             </Typography>
-                                            <Typography variant="body2" sx={{ color: "#718096", flexGrow: 1 }}>
+                                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, flexGrow: 1 }}>
                                                 {feature.description}
                                             </Typography>
                                         </Card>
@@ -622,39 +610,39 @@ const LandingPage = () => {
                     </motion.div>
                 </Container>
             </Box>
-            
+
             {/* Marketplace Preview Section */}
-            <Box id="marketplace" sx={{ py: 8, bgcolor: "#f9fafb" }}>
+            <Box id="marketplace" sx={{ py: 8, bgcolor: theme.palette.background.default }}>
                 <Container maxWidth="lg">
                     <Box sx={{ textAlign: "center", mb: 6 }}>
-                        <Chip 
-                            label="Marketplace" 
-                            sx={{ 
-                                bgcolor: "#e6fffa", 
-                                color: "#319795", 
+                        <Chip
+                            label="Marketplace"
+                            sx={{
+                                bgcolor: theme.palette.mode === 'light' ? '#CCFBF1' : 'rgba(20, 184, 166, 0.2)',
+                                color: theme.palette.mode === 'light' ? '#0D9488' : '#5EEAD4',
                                 fontWeight: 600,
                                 mb: 2
-                            }} 
+                            }}
                         />
-                        <Typography variant="h3" sx={{ fontWeight: 700, mb: 2, color: "#2d3748" }}>
+                        <Typography variant="h3" sx={{ fontWeight: 700, mb: 2, color: theme.palette.text.primary }}>
                             Featured Items
                         </Typography>
-                        <Typography 
-                            variant="body1" 
-                            sx={{ 
-                                color: "#718096", 
-                                maxWidth: 660, 
+                        <Typography
+                            variant="body1"
+                            sx={{
+                                color: theme.palette.text.secondary,
+                                maxWidth: 660,
                                 mx: "auto",
                                 fontSize: "1.1rem"
                             }}
                         >
-                            Get a glimpse of the quality items available on our platform. 
+                            Get a glimpse of the quality items available on our platform.
                             From textbooks to tech, find everything you need for campus life.
                         </Typography>
                     </Box>
-                    
-                    <motion.div 
-                        initial="hidden" 
+
+                    <motion.div
+                        initial="hidden"
                         whileInView="visible"
                         viewport={{ once: true, amount: 0.2 }}
                         variants={staggerContainer}
@@ -668,20 +656,22 @@ const LandingPage = () => {
                                             sx={{
                                                 borderRadius: 4,
                                                 overflow: "hidden",
-                                                border: "1px solid #e2e8f0",
+                                                border: `1px solid ${theme.palette.divider}`,
                                                 transition: "all 0.3s",
                                                 "&:hover": {
                                                     transform: "translateY(-8px)",
-                                                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)"
+                                                    boxShadow: theme.palette.mode === 'light'
+                                                        ? "0 20px 25px -5px rgba(0, 0, 0, 0.1)"
+                                                        : "0 20px 25px -5px rgba(0, 0, 0, 0.4)"
                                                 },
                                                 height: "100%",
                                                 display: "flex",
                                                 flexDirection: "column"
                                             }}
                                         >
-                                            <Box 
-                                                sx={{ 
-                                                    height: 200, 
+                                            <Box
+                                                sx={{
+                                                    height: 200,
                                                     position: "relative",
                                                     overflow: "hidden"
                                                 }}
@@ -695,7 +685,7 @@ const LandingPage = () => {
                                                         height: "150px",
                                                         objectFit: "cover",
                                                         transition: "transform 0.6s",
-                                                        bgcolor: '#f8fafc',
+                                                        bgcolor: theme.palette.grey[100],
                                                         "&:hover": {
                                                             transform: "scale(1.05)"
                                                         }
@@ -708,24 +698,24 @@ const LandingPage = () => {
                                                         position: "absolute",
                                                         top: 12,
                                                         right: 12,
-                                                        bgcolor: "rgba(255, 255, 255, 0.9)",
-                                                        color: "#6b46c1",
+                                                        bgcolor: theme.palette.background.paper,
+                                                        color: theme.palette.primary.main,
                                                         fontWeight: 600
                                                     }}
                                                 />
                                             </Box>
                                             <CardContent sx={{ flexGrow: 1 }}>
-                                                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: "#2d3748" }}>
+                                                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: theme.palette.text.primary }}>
                                                     {item.title}
                                                 </Typography>
-                                                <Typography variant="h6" sx={{ fontWeight: 700, color: "#6b46c1", mb: 1 }}>
+                                                <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.primary.main, mb: 1 }}>
                                                     ${item.price.toFixed(2)}
                                                 </Typography>
                                                 <Box sx={{ display: "flex", alignItems: "center" }}>
-                                                    <Avatar sx={{ width: 28, height: 28, mr: 1 }}>
+                                                    <Avatar sx={{ width: 28, height: 28, mr: 1, bgcolor: theme.palette.primary.main }}>
                                                         {item.seller.charAt(0)}
                                                     </Avatar>
-                                                    <Typography variant="body2" sx={{ color: "#718096" }}>
+                                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                                                         {item.seller}
                                                     </Typography>
                                                 </Box>
@@ -736,23 +726,17 @@ const LandingPage = () => {
                             ))}
                         </Grid>
                     </motion.div>
-                    
+
                     <Box sx={{ textAlign: "center", mt: 5 }}>
                         <Button
                             variant="outlined"
                             size="large"
                             onClick={handleLogin}
                             sx={{
-                                borderColor: "#6b46c1",
-                                color: "#6b46c1",
                                 borderRadius: 50,
                                 px: 4,
                                 py: 1.5,
                                 fontWeight: 600,
-                                "&:hover": {
-                                    borderColor: "#5a32a3",
-                                    bgcolor: "rgba(107, 70, 193, 0.04)"
-                                }
                             }}
                         >
                             View All Listings
@@ -762,37 +746,37 @@ const LandingPage = () => {
             </Box>
 
             {/* Testimonials Section */}
-            <Box id="testimonials" sx={{ py: 10, bgcolor: "white" }}>
+            <Box id="testimonials" sx={{ py: 10, bgcolor: theme.palette.background.paper }}>
                 <Container maxWidth="lg">
                     <Box sx={{ textAlign: "center", mb: 6 }}>
-                        <Chip 
-                            label="Testimonials" 
-                            sx={{ 
-                                bgcolor: "#feebc8", 
-                                color: "#dd6b20", 
+                        <Chip
+                            label="Testimonials"
+                            sx={{
+                                bgcolor: theme.palette.mode === 'light' ? '#FEF3C7' : 'rgba(245, 158, 11, 0.2)',
+                                color: theme.palette.warning.main,
                                 fontWeight: 600,
                                 mb: 2
-                            }} 
+                            }}
                         />
-                        <Typography variant="h3" sx={{ fontWeight: 700, mb: 2, color: "#2d3748" }}>
+                        <Typography variant="h3" sx={{ fontWeight: 700, mb: 2, color: theme.palette.text.primary }}>
                             What Students Say
                         </Typography>
-                        <Typography 
-                            variant="body1" 
-                            sx={{ 
-                                color: "#718096", 
-                                maxWidth: 660, 
+                        <Typography
+                            variant="body1"
+                            sx={{
+                                color: theme.palette.text.secondary,
+                                maxWidth: 660,
                                 mx: "auto",
                                 fontSize: "1.1rem"
                             }}
                         >
-                            Don't just take our word for it. Here's what fellow students 
+                            Don't just take our word for it. Here's what fellow students
                             have to say about their PolyMart experience.
                         </Typography>
                     </Box>
-                    
-                    <motion.div 
-                        initial="hidden" 
+
+                    <motion.div
+                        initial="hidden"
                         whileInView="visible"
                         viewport={{ once: true, amount: 0.2 }}
                         variants={staggerContainer}
@@ -809,32 +793,34 @@ const LandingPage = () => {
                                                 flexDirection: "column",
                                                 borderRadius: 4,
                                                 p: 4,
-                                                border: "1px solid #e2e8f0",
+                                                border: `1px solid ${theme.palette.divider}`,
                                                 transition: "all 0.3s",
                                                 "&:hover": {
                                                     transform: "translateY(-8px)",
-                                                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)"
+                                                    boxShadow: theme.palette.mode === 'light'
+                                                        ? "0 20px 25px -5px rgba(0, 0, 0, 0.1)"
+                                                        : "0 20px 25px -5px rgba(0, 0, 0, 0.4)"
                                                 }
                                             }}
                                         >
                                             <Box sx={{ mb: 3, display: "flex" }}>
                                                 {[...Array(5)].map((_, i) => (
-                                                    <StarIcon 
-                                                        key={i} 
-                                                        sx={{ 
-                                                            color: "#f6ad55",
+                                                    <StarIcon
+                                                        key={i}
+                                                        sx={{
+                                                            color: theme.palette.warning.main,
                                                             width: 22,
                                                             height: 22
-                                                        }} 
+                                                        }}
                                                     />
                                                 ))}
                                             </Box>
-                                            <Typography 
-                                                variant="body1" 
-                                                sx={{ 
-                                                    mb: 4, 
+                                            <Typography
+                                                variant="body1"
+                                                sx={{
+                                                    mb: 4,
                                                     flexGrow: 1,
-                                                    color: "#4a5568",
+                                                    color: theme.palette.text.secondary,
                                                     fontStyle: "italic",
                                                     lineHeight: 1.7
                                                 }}
@@ -842,22 +828,22 @@ const LandingPage = () => {
                                                 "{testimonial.text}"
                                             </Typography>
                                             <Box sx={{ display: "flex", alignItems: "center" }}>
-                                                <Avatar 
-                                                    src={testimonial.image} 
-                                                    sx={{ 
-                                                        width: 48, 
+                                                <Avatar
+                                                    src={testimonial.image}
+                                                    sx={{
+                                                        width: 48,
                                                         height: 48,
                                                         mr: 2,
-                                                        border: "2px solid #e9d8fd"
+                                                        border: `2px solid ${theme.palette.primary.light}`
                                                     }}
                                                 >
                                                     {testimonial.name.charAt(0)}
                                                 </Avatar>
                                                 <Box>
-                                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#2d3748" }}>
+                                                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
                                                         {testimonial.name}
                                                     </Typography>
-                                                    <Typography variant="body2" sx={{ color: "#718096" }}>
+                                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                                                         {testimonial.role}
                                                     </Typography>
                                                 </Box>
@@ -872,7 +858,12 @@ const LandingPage = () => {
             </Box>
 
             {/* Call to Action */}
-            <Box sx={{ py: 10, bgcolor: "#6b46c1" }}>
+            <Box sx={{
+                py: 10,
+                background: theme.palette.mode === 'light'
+                    ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`
+                    : `linear-gradient(135deg, ${theme.palette.grey[800]} 0%, ${theme.palette.grey[900]} 100%)`
+            }}>
                 <Container maxWidth="lg">
                     <Grid container spacing={4} alignItems="center">
                         <Grid item xs={12} md={7}>
@@ -882,22 +873,22 @@ const LandingPage = () => {
                                 transition={{ duration: 0.8 }}
                                 viewport={{ once: true }}
                             >
-                                <Typography 
-                                    variant="h3" 
-                                    sx={{ 
-                                        fontWeight: 700, 
-                                        mb: 2, 
-                                        color: "white" 
+                                <Typography
+                                    variant="h3"
+                                    sx={{
+                                        fontWeight: 700,
+                                        mb: 2,
+                                        color: "white"
                                     }}
                                 >
                                     Ready to Start Buying & Selling?
                                 </Typography>
-                                <Typography 
-                                    variant="h6" 
-                                    sx={{ 
-                                        fontWeight: 400, 
-                                        mb: 4, 
-                                        color: "rgba(255,255,255,0.8)" 
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        fontWeight: 400,
+                                        mb: 4,
+                                        color: "rgba(255,255,255,0.8)"
                                     }}
                                 >
                                     Join the Florida Poly community marketplace today and discover
@@ -909,7 +900,7 @@ const LandingPage = () => {
                                     onClick={handleLogin}
                                     sx={{
                                         bgcolor: "white",
-                                        color: "#6b46c1",
+                                        color: theme.palette.primary.main,
                                         borderRadius: 50,
                                         px: 4,
                                         py: 1.5,
@@ -930,7 +921,7 @@ const LandingPage = () => {
                                 transition={{ duration: 0.8 }}
                                 viewport={{ once: true }}
                             >
-                                <Box 
+                                <Box
                                     component="img"
                                     src="/assets/cta-illustration.svg"
                                     alt="Join now illustration"
@@ -948,7 +939,11 @@ const LandingPage = () => {
             </Box>
 
             {/* Footer */}
-            <Box sx={{ bgcolor: "#1a202c", color: "white", py: 6 }}>
+            <Box sx={{
+                bgcolor: theme.palette.mode === 'light' ? theme.palette.grey[900] : theme.palette.grey[900],
+                color: "white",
+                py: 6
+            }}>
                 <Container maxWidth="lg">
                     <Grid container spacing={4}>
                         <Grid item xs={12} md={4}>
@@ -959,18 +954,11 @@ const LandingPage = () => {
                                 The premier marketplace exclusively for the Florida Polytechnic University community.
                             </Typography>
                             <Box sx={{ display: "flex", gap: 2 }}>
-                                <IconButton size="small" sx={{ color: "white" }}>
-                                    <FacebookIcon />
-                                </IconButton>
-                                <IconButton size="small" sx={{ color: "white" }}>
-                                    <TwitterIcon />
-                                </IconButton>
-                                <IconButton size="small" sx={{ color: "white" }}>
-                                    <InstagramIcon />
-                                </IconButton>
-                                <IconButton size="small" sx={{ color: "white" }}>
-                                    <LinkedInIcon />
-                                </IconButton>
+                                {[FacebookIcon, TwitterIcon, InstagramIcon, LinkedInIcon].map((Icon, i) => (
+                                    <IconButton key={i} size="small" sx={{ color: "white", "&:hover": { color: theme.palette.primary.light } }}>
+                                        <Icon />
+                                    </IconButton>
+                                ))}
                             </Box>
                         </Grid>
                         <Grid item xs={6} md={2}>
@@ -980,10 +968,10 @@ const LandingPage = () => {
                             <List dense disablePadding>
                                 {["Home", "Features", "Marketplace", "Testimonials"].map((item) => (
                                     <ListItem key={item} disablePadding sx={{ mb: 1 }}>
-                                        <Link 
+                                        <Link
                                             href={`#${item.toLowerCase()}`}
                                             underline="hover"
-                                            sx={{ 
+                                            sx={{
                                                 color: "rgba(255,255,255,0.7)",
                                                 "&:hover": { color: "white" }
                                             }}
@@ -1001,10 +989,10 @@ const LandingPage = () => {
                             <List dense disablePadding>
                                 {["Help Center", "Community", "Guidelines", "FAQ"].map((item) => (
                                     <ListItem key={item} disablePadding sx={{ mb: 1 }}>
-                                        <Link 
+                                        <Link
                                             href="#"
                                             underline="hover"
-                                            sx={{ 
+                                            sx={{
                                                 color: "rgba(255,255,255,0.7)",
                                                 "&:hover": { color: "white" }
                                             }}
@@ -1030,7 +1018,7 @@ const LandingPage = () => {
                                     variant="outlined"
                                     sx={{
                                         bgcolor: "rgba(255,255,255,0.05)",
-                                        borderRadius: "4px 0 0 4px",
+                                        borderRadius: "8px 0 0 8px",
                                         "& .MuiOutlinedInput-notchedOutline": {
                                             borderColor: "rgba(255,255,255,0.1)",
                                             borderRight: 0
@@ -1043,11 +1031,7 @@ const LandingPage = () => {
                                 <Button
                                     variant="contained"
                                     sx={{
-                                        bgcolor: "#6b46c1",
-                                        borderRadius: "0 4px 4px 0",
-                                        "&:hover": {
-                                            bgcolor: "#553c9a"
-                                        }
+                                        borderRadius: "0 8px 8px 0",
                                     }}
                                 >
                                     Subscribe
@@ -1057,7 +1041,7 @@ const LandingPage = () => {
                     </Grid>
                     <Divider sx={{ borderColor: "rgba(255,255,255,0.1)", my: 4 }} />
                     <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.5)", textAlign: "center" }}>
-                        © {new Date().getFullYear()} PolyMart. All rights reserved. Made with ❤️ for Florida Polytechnic University.
+                        © {new Date().getFullYear()} PolyMart. All rights reserved. Made for Florida Polytechnic University.
                     </Typography>
                 </Container>
             </Box>

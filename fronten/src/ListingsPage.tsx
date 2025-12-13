@@ -1,69 +1,71 @@
-import polylogo from "./assets/poly-logo.webp"
-import {useNavigate} from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
     Alert,
     Box,
     Button,
     Card,
-    CardContent,
-    CircularProgress,
+    CardMedia,
     Grid,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemText,
+    IconButton,
     Paper,
     Table,
     TableBody,
     TableCell,
+    TableContainer,
     TableHead,
     TableRow,
     Typography,
+    useTheme,
+    alpha,
 } from "@mui/material";
-import {useEffect, useState} from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
+import InventoryIcon from "@mui/icons-material/Inventory";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import { PageLayout, DashboardSidebar } from "./components/layout";
+import { LoadingState, EmptyState } from "./components/common";
 
+interface Sale {
+    Id: number;
+    salesDate: string;
+    salesPrice: number;
+    seller: string;
+    buyer: string;
+}
+
+interface Item {
+    id: number;
+    title: string;
+    description: string;
+    price: number;
+    status: string;
+    category: string;
+    seller: string;
+    imageUrls: string[];
+    createdAt: string;
+}
+
+interface DashboardStats {
+    totalSales: number;
+    totalPurchases: number;
+    activeListings: number;
+    recentActivity: Sale[];
+    mySelling: Item[];
+}
+
+interface ActivityItem {
+    date: string;
+    activity: string;
+    amount: number;
+}
 
 const Dashboard = () => {
-
-    interface Sale {
-        Id: number,
-        salesDate: string,
-        salesPrice: number,
-        seller: string,
-        buyer: string
-    }
-
-    interface Item {
-        id: number;
-        title: string;
-        description: string;
-        price: number;
-        status: string;
-        category: string;
-        seller: string;
-        imageUrls: string[];
-        createdAt: string;
-
-    }
-
-    interface DashboardStats {
-        totalSales: number;
-        totalPurchases: number;
-        activeListings: number;
-        recentActivity: Sale[]
-        mySelling: Item[]
-    }
-
-
-    interface ActivityItem {
-        date: string;
-        activity: string;
-        amount: number;
-    }
-
-
     const navigate = useNavigate();
+    const theme = useTheme();
     const [username, setUsername] = useState<string>('User');
     const [stats, setStats] = useState<DashboardStats>({
         totalSales: 0,
@@ -75,25 +77,24 @@ const Dashboard = () => {
     const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [mySelling, setMySelling] = useState<Item[]>([])
-    const [mySaved, setMySaved] = useState<Item[]>([])
-
+    const [mySelling, setMySelling] = useState<Item[]>([]);
+    const [mySaved, setMySaved] = useState<Item[]>([]);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             const userId = localStorage.getItem('userId');
-            const name = localStorage.getItem('name')
+            const name = localStorage.getItem('name');
             if (!userId || !name) {
                 setError('User not authenticated');
                 setLoading(false);
                 return;
             }
-            setUsername(name)
+            setUsername(name);
 
             try {
-
                 const statsResponse = await axios.get(`http://localhost:8080/api/v1/user/dashboardstats`, {
-                    params: {userId},
+                    params: { userId },
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("token")}`
                     }
@@ -101,11 +102,11 @@ const Dashboard = () => {
 
                 if (statsResponse.data) {
                     setStats(statsResponse.data);
-                    setMySelling(statsResponse.data.mySelling)
+                    setMySelling(statsResponse.data.mySelling);
                 }
 
                 const savedListingsResponse = await axios.get(`http://localhost:8080/api/v1/saved/last-five`, {
-                    params: {userId},
+                    params: { userId },
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("token")}`
                     }
@@ -114,11 +115,8 @@ const Dashboard = () => {
                 if (savedListingsResponse.status === 200) {
                     setMySaved(savedListingsResponse.data);
                 }
-
-                
             } catch (err) {
                 console.error('Error fetching dashboard data:', err);
-                // Use default data if API fails
                 setStats({
                     totalSales: 2450,
                     totalPurchases: 1780,
@@ -128,9 +126,9 @@ const Dashboard = () => {
                 });
 
                 setRecentActivity([
-                    {date: '2025-03-15', activity: 'Sold "Vintage Camera"', amount: 120},
-                    {date: '2025-03-14', activity: 'Purchased "Old Book Collection"', amount: 60},
-                    {date: '2025-03-13', activity: 'Listed "Antique Vase"', amount: 85}
+                    { date: '2025-03-15', activity: 'Sold "Vintage Camera"', amount: 120 },
+                    { date: '2025-03-14', activity: 'Purchased "Old Book Collection"', amount: 60 },
+                    { date: '2025-03-13', activity: 'Listed "Antique Vase"', amount: 85 }
                 ]);
             } finally {
                 setLoading(false);
@@ -140,491 +138,484 @@ const Dashboard = () => {
         fetchDashboardData();
     }, []);
 
-
     const handleRemoveSaved = (itemId: number) => {
         return async () => {
             try {
                 const userId = localStorage.getItem('userId');
 
                 const response = await axios.delete(`http://localhost:8080/api/v1/saved/unsave`, {
-                    params: {userId, itemId},
+                    params: { userId, itemId },
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("token")}`
                     }
                 });
-                if(response.status === 200) {
-                    alert('Item removed from saved');
-                    window.location.reload();
+                if (response.status === 200) {
+                    setMySaved(mySaved.filter(item => item.id !== itemId));
                 }
             } catch (err) {
                 console.error('Error removing saved item:', err);
             }
         };
-    }
+    };
 
-    if (loading) {
-        return (
-            <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}>
-                <CircularProgress/>
-            </Box>
-        );
-    }
+    const getDefaultImage = (item: Item) => {
+        return item.imageUrls && item.imageUrls.length > 0
+            ? item.imageUrls[0]
+            : "/assets/placeholder.png";
+    };
 
     return (
-        <Box sx={{display: "flex", minHeight: "100vh", backgroundColor: "#f8fafc"}}>
-            {/* Sidebar */}
-            <Box
-                sx={{
-                    width: 280,
-                    backgroundColor: "#fff",
-                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                    display: "flex",
-                    flexDirection: "column",
-                    p: 3,
-                    position: "fixed",
-                    height: "100vh",
-                    zIndex: 1,
-                }}
-            >
-                <Box component="img" src={polylogo} alt="Logo" sx={{height: 60, width: 60, mb: 3}}/>
-                <Typography variant="h4" sx={{
-                    fontWeight: "bold",
-                    background: "linear-gradient(45deg, #6b46c1 30%, #805ad5 90%)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    mb: 3
+        <PageLayout variant="dashboard" showCategories={false} showFooter={false}>
+            <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 64px)' }}>
+                {/* Sidebar */}
+                <DashboardSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+                {/* Main Content */}
+                <Box sx={{
+                    flex: 1,
+                    p: { xs: 2, md: 4 },
+                    ml: { xs: 0, md: '260px' },
+                    maxWidth: { md: 'calc(100% - 260px)' },
                 }}>
-                    Dashboard
-                </Typography>
-                <List sx={{flexGrow: 1}}>
-                    {[
-                        {label: "Home", path: "/home"},
-                        {label: "Dashboard", path: "/listings"},
-                        {label: "My Selling", path: "/myselling"},
-                        {label: "My Buying", path: "/mybuying"},
-                        {label: "Notifications", path: "/notifications"},
-                        {label: "Settings", path: "/settings"},
-                    ].map((item) => (
-                        <ListItem key={item.label} disablePadding sx={{mb: 1}}>
-                            <ListItemButton 
-                                onClick={() => navigate(item.path)}
-                                sx={{
-                                    borderRadius: 2,
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(107, 70, 193, 0.08)',
-                                    }
-                                }}
-                            >
-                                <ListItemText
-                                    primary={item.label}
-                                    primaryTypographyProps={{
-                                        variant: "body1",
-                                        sx: {
-                                            color: "#4a5568",
-                                            textTransform: "none",
-                                            fontWeight: 500
-                                        },
-                                    }}
-                                />
-                            </ListItemButton>
-                        </ListItem>
-                    ))}
-                </List>
-            </Box>
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+                            {error}
+                        </Alert>
+                    )}
 
-            {/* Main Content */}
-            <Box sx={{flex: 1, p: 4, ml: "280px"}}>
-                {error && (
-                    <Alert severity="error" sx={{mb: 3, borderRadius: 2}}>
-                        {error}
-                    </Alert>
-                )}
+                    {/* Header */}
+                    <Box sx={{ mb: 4 }}>
+                        <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                            Welcome back, {username}
+                        </Typography>
+                        <Typography variant="body1" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                            Here's an overview of your marketplace activity
+                        </Typography>
+                    </Box>
 
-                {/* Header */}
-                <Paper 
-                    sx={{
-                        p: 3,
-                        mb: 4,
-                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                        borderRadius: 3,
-                        background: "linear-gradient(45deg, #ffffff 30%, #f8fafc 90%)",
-                    }}
-                >
-                    <Typography variant="h4" sx={{
-                        fontWeight: "bold",
-                        background: "linear-gradient(45deg, #6b46c1 30%, #805ad5 90%)",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                    }}>
-                        Welcome, {username}
-                    </Typography>
-                    <Typography variant="body1" sx={{color: "#718096", mt: 1}}>
-                        Overview of your account activities.
-                    </Typography>
-                </Paper>
-
-                {/* Statistic Cards */}
-                <Grid container spacing={3} sx={{mb: 4}}>
-                    <Grid item xs={12} md={4}>
-                        <Card sx={{
-                            p: 3,
-                            borderRadius: 3,
-                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                            background: "linear-gradient(45deg, #ffffff 30%, #f8fafc 90%)",
-                            transition: "transform 0.2s",
-                            '&:hover': {
-                                transform: "translateY(-4px)",
-                            }
-                        }}>
-                            <CardContent>
-                                <Typography variant="h6" sx={{color: "#4a5568", mb: 2}}>
-                                    Total Sales
-                                </Typography>
-                                <Typography variant="h4" sx={{
-                                    fontWeight: "bold",
-                                    background: "linear-gradient(45deg, #6b46c1 30%, #805ad5 90%)",
-                                    WebkitBackgroundClip: "text",
-                                    WebkitTextFillColor: "transparent",
-                                }}>
-                                    ${stats.totalSales}
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <Card sx={{
-                            p: 3,
-                            borderRadius: 3,
-                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                            background: "linear-gradient(45deg, #ffffff 30%, #f8fafc 90%)",
-                            transition: "transform 0.2s",
-                            '&:hover': {
-                                transform: "translateY(-4px)",
-                            }
-                        }}>
-                            <CardContent>
-                                <Typography variant="h6" sx={{color: "#4a5568", mb: 2}}>
-                                    Total Purchases
-                                </Typography>
-                                <Typography variant="h4" sx={{
-                                    fontWeight: "bold",
-                                    background: "linear-gradient(45deg, #6b46c1 30%, #805ad5 90%)",
-                                    WebkitBackgroundClip: "text",
-                                    WebkitTextFillColor: "transparent",
-                                }}>
-                                    ${stats.totalPurchases}
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <Card sx={{
-                            p: 3,
-                            borderRadius: 3,
-                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                            background: "linear-gradient(45deg, #ffffff 30%, #f8fafc 90%)",
-                            transition: "transform 0.2s",
-                            '&:hover': {
-                                transform: "translateY(-4px)",
-                            }
-                        }}>
-                            <CardContent>
-                                <Typography variant="h6" sx={{color: "#4a5568", mb: 2}}>
-                                    Active Listings
-                                </Typography>
-                                <Typography variant="h4" sx={{
-                                    fontWeight: "bold",
-                                    background: "linear-gradient(45deg, #6b46c1 30%, #805ad5 90%)",
-                                    WebkitBackgroundClip: "text",
-                                    WebkitTextFillColor: "transparent",
-                                }}>
-                                    {stats.activeListings}
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                </Grid>
-
-                {/* Recent Activity Table */}
-                <Box sx={{mb: 4}}>
-                    <Typography variant="h5" sx={{
-                        fontWeight: "bold",
-                        color: "#6b46c1",
-                        mb: 2,
-                        display: "flex",
-                        alignItems: "center",
-                    }}>
-                        Recent Activity
-                    </Typography>
-                    <Paper sx={{
-                        borderRadius: 3,
-                        overflow: "hidden",
-                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                    }}>
-                        <Table>
-                            <TableHead sx={{backgroundColor: "#f8fafc"}}>
-                                <TableRow>
-                                    <TableCell sx={{fontWeight: "bold", color: "#4a5568"}}>Date</TableCell>
-                                    <TableCell sx={{fontWeight: "bold", color: "#4a5568"}}>Activity</TableCell>
-                                    <TableCell sx={{fontWeight: "bold", color: "#4a5568"}}>Amount</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {recentActivity.map((item, index) => (
-                                    <TableRow 
-                                        key={index}
+                    {loading ? (
+                        <LoadingState message="Loading dashboard..." />
+                    ) : (
+                        <>
+                            {/* Stats Cards */}
+                            <Grid container spacing={3} sx={{ mb: 4 }}>
+                                <Grid item xs={12} sm={6} md={3}>
+                                    <Paper
+                                        elevation={0}
                                         sx={{
-                                            '&:hover': {
-                                                backgroundColor: 'rgba(107, 70, 193, 0.04)',
-                                            }
+                                            p: 3,
+                                            borderRadius: 3,
+                                            border: `1px solid ${theme.palette.divider}`,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 2,
                                         }}
                                     >
-                                        <TableCell>{item.date}</TableCell>
-                                        <TableCell>{item.activity}</TableCell>
-                                        <TableCell>${item.amount}</TableCell>
-                                    </TableRow>
-                                ))}
-                                {recentActivity.length === 0 && (
-                                    <TableRow>
-                                        <TableCell colSpan={3} sx={{textAlign: 'center', py: 3}}>
-                                            <Typography variant="body1" sx={{color: "#718096"}}>
-                                                No recent activity found
+                                        <Box
+                                            sx={{
+                                                width: 48,
+                                                height: 48,
+                                                borderRadius: 2,
+                                                bgcolor: alpha(theme.palette.success.main, 0.1),
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}
+                                        >
+                                            <TrendingUpIcon sx={{ color: 'success.main' }} />
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                                                ${stats.totalSales}
                                             </Typography>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </Paper>
-                </Box>
+                                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                                Total Sales
+                                            </Typography>
+                                        </Box>
+                                    </Paper>
+                                </Grid>
+                                <Grid item xs={12} sm={6} md={3}>
+                                    <Paper
+                                        elevation={0}
+                                        sx={{
+                                            p: 3,
+                                            borderRadius: 3,
+                                            border: `1px solid ${theme.palette.divider}`,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 2,
+                                        }}
+                                    >
+                                        <Box
+                                            sx={{
+                                                width: 48,
+                                                height: 48,
+                                                borderRadius: 2,
+                                                bgcolor: alpha(theme.palette.info.main, 0.1),
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}
+                                        >
+                                            <ShoppingBagIcon sx={{ color: 'info.main' }} />
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                                                ${stats.totalPurchases}
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                                Total Purchases
+                                            </Typography>
+                                        </Box>
+                                    </Paper>
+                                </Grid>
+                                <Grid item xs={12} sm={6} md={3}>
+                                    <Paper
+                                        elevation={0}
+                                        sx={{
+                                            p: 3,
+                                            borderRadius: 3,
+                                            border: `1px solid ${theme.palette.divider}`,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 2,
+                                        }}
+                                    >
+                                        <Box
+                                            sx={{
+                                                width: 48,
+                                                height: 48,
+                                                borderRadius: 2,
+                                                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}
+                                        >
+                                            <InventoryIcon sx={{ color: 'primary.main' }} />
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                                                {stats.activeListings}
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                                Active Listings
+                                            </Typography>
+                                        </Box>
+                                    </Paper>
+                                </Grid>
+                                <Grid item xs={12} sm={6} md={3}>
+                                    <Paper
+                                        elevation={0}
+                                        sx={{
+                                            p: 3,
+                                            borderRadius: 3,
+                                            border: `1px solid ${theme.palette.divider}`,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 2,
+                                        }}
+                                    >
+                                        <Box
+                                            sx={{
+                                                width: 48,
+                                                height: 48,
+                                                borderRadius: 2,
+                                                bgcolor: alpha(theme.palette.error.main, 0.1),
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}
+                                        >
+                                            <FavoriteIcon sx={{ color: 'error.main' }} />
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                                                {mySaved.length}
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                                Saved Items
+                                            </Typography>
+                                        </Box>
+                                    </Paper>
+                                </Grid>
+                            </Grid>
 
-                {/* Manage Selling and Buying Panels */}
-                <Grid container spacing={3}>
-                    <Grid item xs={12} lg={6}>
-                        <Typography variant="h5" sx={{
-                            fontWeight: "bold",
-                            color: "#6b46c1",
-                            mb: 2,
-                            display: "flex",
-                            alignItems: "center",
-                        }}>
-                            My Selling
-                        </Typography>
-                        <Paper sx={{
-                            p: 3,
-                            mb: 2,
-                            borderRadius: 3,
-                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                        }}>
-                            {mySelling.length > 0 ? (
-                                <>
-                                    {mySelling.map((item) => (
-                                        <Box 
-                                            key={item.id} 
-                                            sx={{
-                                                display: "flex", 
-                                                alignItems: "center", 
-                                                mb: 2, 
-                                                p: 2,
-                                                borderRadius: 2,
-                                                '&:hover': {
-                                                    backgroundColor: 'rgba(107, 70, 193, 0.04)',
-                                                },
-                                                "&:last-child": { mb: 0 }
-                                            }}
-                                        >
-                                            <Box
-                                                component="img"
-                                                src={item.imageUrls[0]}
-                                                alt={item.title}
-                                                sx={{
-                                                    width: 80, 
-                                                    height: 80, 
-                                                    objectFit: "cover", 
-                                                    borderRadius: 2,
-                                                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                                                }}
-                                            />
-                                            <Box sx={{ml: 2, flex: 1}}>
-                                                <Typography variant="h6" sx={{fontWeight: "bold", color: "#4a5568"}}>
-                                                    {item.title}
-                                                </Typography>
-                                                <Typography variant="body1" sx={{color: "#718096"}}>
-                                                    ${item.price.toFixed(2)}
-                                                </Typography>
-                                            </Box>
+                            {/* Recent Activity */}
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    borderRadius: 3,
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    mb: 4,
+                                    overflow: 'hidden',
+                                }}
+                            >
+                                <Box sx={{ p: 3, borderBottom: `1px solid ${theme.palette.divider}` }}>
+                                    <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                                        Recent Activity
+                                    </Typography>
+                                </Box>
+                                {recentActivity.length > 0 ? (
+                                    <TableContainer>
+                                        <Table>
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                                                    <TableCell sx={{ fontWeight: 600 }}>Activity</TableCell>
+                                                    <TableCell sx={{ fontWeight: 600 }} align="right">Amount</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {recentActivity.map((item, index) => (
+                                                    <TableRow key={index} hover>
+                                                        <TableCell>{item.date}</TableCell>
+                                                        <TableCell>{item.activity}</TableCell>
+                                                        <TableCell align="right">
+                                                            <Typography sx={{ fontWeight: 600, color: 'primary.main' }}>
+                                                                ${item.amount}
+                                                            </Typography>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                ) : (
+                                    <Box sx={{ p: 4 }}>
+                                        <EmptyState
+                                            type="history"
+                                            title="No recent activity"
+                                            description="Your recent marketplace activity will appear here"
+                                        />
+                                    </Box>
+                                )}
+                            </Paper>
+
+                            {/* My Selling and Saved Grid */}
+                            <Grid container spacing={3}>
+                                {/* My Selling */}
+                                <Grid item xs={12} lg={6}>
+                                    <Paper
+                                        elevation={0}
+                                        sx={{
+                                            borderRadius: 3,
+                                            border: `1px solid ${theme.palette.divider}`,
+                                            overflow: 'hidden',
+                                        }}
+                                    >
+                                        <Box sx={{
+                                            p: 3,
+                                            borderBottom: `1px solid ${theme.palette.divider}`,
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center'
+                                        }}>
+                                            <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                                                My Listings
+                                            </Typography>
                                             <Button
-                                                variant="outlined"
-                                                color="primary"
                                                 size="small"
-                                                sx={{
-                                                    borderRadius: "20px",
-                                                    textTransform: "none",
-                                                    fontWeight: "bold",
-                                                    borderColor: "#6b46c1",
-                                                    color: "#6b46c1",
-                                                    '&:hover': {
-                                                        borderColor: "#5a32b0",
-                                                        backgroundColor: "rgba(107, 70, 193, 0.04)"
-                                                    }
-                                                }}
-                                                onClick={() => navigate(`/item/${item.id}`)}
+                                                onClick={() => navigate("/myselling")}
+                                                sx={{ fontWeight: 600 }}
                                             >
-                                                Edit
+                                                View All
                                             </Button>
                                         </Box>
-                                    ))}
-                                    <Box sx={{display: "flex", justifyContent: "center", mt: 3}}>
-                                        <Button
-                                            variant="contained"
-                                            color="primary"
-                                            sx={{
-                                                borderRadius: "20px",
-                                                textTransform: "none",
-                                                fontWeight: "bold",
-                                                backgroundColor: "#6b46c1",
-                                                px: 4,
-                                                py: 1,
-                                                '&:hover': {
-                                                    backgroundColor: "#5a32b0"
-                                                }
-                                            }}
-                                            onClick={() => navigate("/myselling")}
-                                        >
-                                            View All Listings
-                                        </Button>
-                                    </Box>
-                                </>
-                            ) : (
-                                <Typography variant="body1" sx={{color: "#718096", textAlign: "center", py: 3}}>
-                                    No items for sale yet
-                                </Typography>
-                            )}
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} lg={6}>
-                        <Typography variant="h5" sx={{
-                            fontWeight: "bold",
-                            color: "#6b46c1",
-                            mb: 2,
-                            display: "flex",
-                            alignItems: "center",
-                        }}>
-                            My Saved
-                        </Typography>
-                        <Paper sx={{
-                            p: 3,
-                            borderRadius: 3,
-                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                        }}>
-                            {mySaved.length > 0 ? (
-                                <>
-                                    {mySaved.map((item) => (
-                                        <Box 
-                                            key={item.id} 
-                                            sx={{
-                                                display: "flex", 
-                                                alignItems: "center", 
-                                                mb: 2, 
-                                                p: 2,
-                                                borderRadius: 2,
-                                                '&:hover': {
-                                                    backgroundColor: 'rgba(107, 70, 193, 0.04)',
-                                                },
-                                                "&:last-child": { mb: 0 }
-                                            }}
-                                        >
-                                            <Box
-                                                component="img"
-                                                src={item.imageUrls[0]}
-                                                alt={item.title}
-                                                sx={{
-                                                    width: 80, 
-                                                    height: 80, 
-                                                    objectFit: "cover", 
-                                                    borderRadius: 2,
-                                                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-                                                }}
-                                            />
-                                            <Box sx={{ml: 2, flex: 1}}>
-                                                <Typography variant="h6" sx={{fontWeight: "bold", color: "#4a5568"}}>
-                                                    {item.title}
-                                                </Typography>
-                                                <Typography variant="body1" sx={{color: "#718096"}}>
-                                                    ${item.price.toFixed(2)}
-                                                </Typography>
+                                        {mySelling.length > 0 ? (
+                                            <Box sx={{ p: 2 }}>
+                                                {mySelling.slice(0, 3).map((item) => (
+                                                    <Box
+                                                        key={item.id}
+                                                        sx={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 2,
+                                                            p: 2,
+                                                            borderRadius: 2,
+                                                            cursor: 'pointer',
+                                                            '&:hover': {
+                                                                bgcolor: alpha(theme.palette.primary.main, 0.04),
+                                                            },
+                                                        }}
+                                                        onClick={() => navigate(`/item/${item.id}`)}
+                                                    >
+                                                        <Card
+                                                            elevation={0}
+                                                            sx={{
+                                                                width: 64,
+                                                                height: 64,
+                                                                borderRadius: 2,
+                                                                overflow: 'hidden',
+                                                                border: `1px solid ${theme.palette.divider}`,
+                                                                flexShrink: 0,
+                                                            }}
+                                                        >
+                                                            <CardMedia
+                                                                component="img"
+                                                                height="64"
+                                                                image={getDefaultImage(item)}
+                                                                alt={item.title}
+                                                                sx={{ objectFit: 'cover' }}
+                                                            />
+                                                        </Card>
+                                                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                            <Typography
+                                                                variant="subtitle2"
+                                                                sx={{
+                                                                    fontWeight: 600,
+                                                                    color: 'text.primary',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis',
+                                                                    whiteSpace: 'nowrap',
+                                                                }}
+                                                            >
+                                                                {item.title}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 600 }}>
+                                                                ${item.price.toFixed(2)}
+                                                            </Typography>
+                                                        </Box>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigate(`/item/${item.id}`);
+                                                            }}
+                                                        >
+                                                            <VisibilityIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </Box>
+                                                ))}
                                             </Box>
+                                        ) : (
+                                            <Box sx={{ p: 4 }}>
+                                                <EmptyState
+                                                    type="listings"
+                                                    title="No listings yet"
+                                                    description="Start selling by creating your first listing"
+                                                    actionLabel="Create Listing"
+                                                    onAction={() => navigate('/create-listing')}
+                                                />
+                                            </Box>
+                                        )}
+                                    </Paper>
+                                </Grid>
+
+                                {/* My Saved */}
+                                <Grid item xs={12} lg={6}>
+                                    <Paper
+                                        elevation={0}
+                                        sx={{
+                                            borderRadius: 3,
+                                            border: `1px solid ${theme.palette.divider}`,
+                                            overflow: 'hidden',
+                                        }}
+                                    >
+                                        <Box sx={{
+                                            p: 3,
+                                            borderBottom: `1px solid ${theme.palette.divider}`,
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center'
+                                        }}>
+                                            <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                                                Saved Items
+                                            </Typography>
                                             <Button
-                                                variant="outlined"
-                                                color="primary"
                                                 size="small"
-                                                sx={{
-                                                    borderRadius: "20px",
-                                                    textTransform: "none",
-                                                    fontWeight: "bold",
-                                                    borderColor: "#6b46c1",
-                                                    color: "#6b46c1",
-                                                    '&:hover': {
-                                                        borderColor: "#5a32b0",
-                                                        backgroundColor: "rgba(107, 70, 193, 0.04)"
-                                                    }
-                                                }}
-                                                onClick={() => navigate(`/item/${item.id}`)}
+                                                onClick={() => navigate("/saved")}
+                                                sx={{ fontWeight: 600 }}
                                             >
-                                                View
-                                            </Button>
-                                            <Button
-                                                variant="outlined"
-                                                color="primary"
-                                                size="small"
-                                                sx={{
-                                                    borderRadius: "20px",
-                                                    textTransform: "none",
-                                                    fontWeight: "bold",
-                                                    borderColor: "#FF0000",
-                                                    color: "#FF0000",
-                                                    '&:hover': {
-                                                        borderColor: "#FF0000",
-                                                        backgroundColor: "rgba(217, 27, 27, 0.04)"
-                                                    }
-                                                }}
-                                                onClick={handleRemoveSaved(item.id)}
-                                            >
-                                                Remove
+                                                View All
                                             </Button>
                                         </Box>
-                                    ))}
-                                    <Box sx={{display: "flex", justifyContent: "center", mt: 3}}>
-                                        <Button
-                                            variant="contained"
-                                            color="primary"
-                                            sx={{
-                                                borderRadius: "20px",
-                                                textTransform: "none",
-                                                fontWeight: "bold",
-                                                backgroundColor: "#6b46c1",
-                                                px: 4,
-                                                py: 1,
-                                                '&:hover': {
-                                                    backgroundColor: "#5a32b0"
-                                                }
-                                            }}
-                                            onClick={() => navigate("/myselling")}
-                                        >
-                                            View All Saved 
-                                        </Button>
-                                    </Box>
-                                </>
-                            ) : (
-                                <Typography variant="body1" sx={{color: "#718096", textAlign: "center", py: 3}}>
-                                    No items saved yet
-                                </Typography>
-                            )}
-                        </Paper>
-                    </Grid>
-                </Grid>
+                                        {mySaved.length > 0 ? (
+                                            <Box sx={{ p: 2 }}>
+                                                {mySaved.slice(0, 3).map((item) => (
+                                                    <Box
+                                                        key={item.id}
+                                                        sx={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 2,
+                                                            p: 2,
+                                                            borderRadius: 2,
+                                                            cursor: 'pointer',
+                                                            '&:hover': {
+                                                                bgcolor: alpha(theme.palette.primary.main, 0.04),
+                                                            },
+                                                        }}
+                                                        onClick={() => navigate(`/item/${item.id}`)}
+                                                    >
+                                                        <Card
+                                                            elevation={0}
+                                                            sx={{
+                                                                width: 64,
+                                                                height: 64,
+                                                                borderRadius: 2,
+                                                                overflow: 'hidden',
+                                                                border: `1px solid ${theme.palette.divider}`,
+                                                                flexShrink: 0,
+                                                            }}
+                                                        >
+                                                            <CardMedia
+                                                                component="img"
+                                                                height="64"
+                                                                image={getDefaultImage(item)}
+                                                                alt={item.title}
+                                                                sx={{ objectFit: 'cover' }}
+                                                            />
+                                                        </Card>
+                                                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                            <Typography
+                                                                variant="subtitle2"
+                                                                sx={{
+                                                                    fontWeight: 600,
+                                                                    color: 'text.primary',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis',
+                                                                    whiteSpace: 'nowrap',
+                                                                }}
+                                                            >
+                                                                {item.title}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 600 }}>
+                                                                ${item.price.toFixed(2)}
+                                                            </Typography>
+                                                        </Box>
+                                                        <IconButton
+                                                            size="small"
+                                                            color="error"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleRemoveSaved(item.id)();
+                                                            }}
+                                                        >
+                                                            <DeleteOutlineIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </Box>
+                                                ))}
+                                            </Box>
+                                        ) : (
+                                            <Box sx={{ p: 4 }}>
+                                                <EmptyState
+                                                    type="favorites"
+                                                    title="No saved items"
+                                                    description="Items you save will appear here"
+                                                    actionLabel="Browse Items"
+                                                    onAction={() => navigate('/home')}
+                                                />
+                                            </Box>
+                                        )}
+                                    </Paper>
+                                </Grid>
+                            </Grid>
+                        </>
+                    )}
+                </Box>
             </Box>
-        </Box>
+        </PageLayout>
     );
 };
 

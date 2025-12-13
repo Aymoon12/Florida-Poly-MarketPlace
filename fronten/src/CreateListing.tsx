@@ -1,25 +1,39 @@
-import React, {FormEvent, useState, useRef} from "react";
+import React, { FormEvent, useState, useRef } from "react";
 import {
     Box,
     Button,
-    Container,
     FormControl,
     FormHelperText,
     Grid,
+    IconButton,
+    InputAdornment,
     InputLabel,
     MenuItem,
     Paper,
     Select,
     SelectChangeEvent,
-    Stack,
     TextField,
     Typography,
     CircularProgress,
     Alert,
+    Snackbar,
+    Stepper,
+    Step,
+    StepLabel,
+    useTheme,
+    alpha,
 } from "@mui/material";
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import CloseIcon from "@mui/icons-material/Close";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ErrorIcon from "@mui/icons-material/Error";
+import ImageIcon from "@mui/icons-material/Image";
+import VideocamIcon from "@mui/icons-material/Videocam";
+import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import axios from "axios";
+import { PageLayout } from './components/layout';
 
 interface UploadedFile extends File {
     preview?: string;
@@ -28,103 +42,91 @@ interface UploadedFile extends File {
     error?: boolean;
 }
 
+const steps = ['Add Photos', 'Item Details', 'Review & Submit'];
+
+const categories = [
+    { value: 'Electronics', label: 'Electronics', icon: '📱' },
+    { value: 'Textbooks', label: 'Textbooks', icon: '📚' },
+    { value: 'Fashion', label: 'Fashion (Apparel)', icon: '👕' },
+    { value: 'Sports', label: 'Sports Gear', icon: '⚽' },
+    { value: 'Collectibles', label: 'Collectibles', icon: '🎮' },
+    { value: 'Services', label: 'Services', icon: '🔧' },
+    { value: 'Other', label: 'Other (Dorm & Living)', icon: '🏠' },
+];
+
 const CreateListing: React.FC = () => {
+    const theme = useTheme();
     const [title, setTitle] = useState("");
     const [price, setPrice] = useState("");
     const [category, setCategory] = useState("");
     const [description, setDescription] = useState("");
     const [files, setFiles] = useState<UploadedFile[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [uploadStatus, setUploadStatus] = useState<{success: boolean; message: string} | null>(null);
+    const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const [activeStep, setActiveStep] = useState(0);
+    const [dragActive, setDragActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const navigate = useNavigate();
 
-    /**
-     * Upload a file to S3 using a presigned URL
-     * @param file The file to upload
-     * @param itemId The item ID to associate with the file
-     * @returns Promise that resolves when upload is complete
-     */
     const uploadFileToS3 = async (file: UploadedFile, itemId: number): Promise<void> => {
         try {
-            console.log(`Starting upload for file ${file.name} to item ID ${itemId}`);
-            
-            // Mark file as uploading
-            setFiles(prevFiles => 
-                prevFiles.map(f => f === file ? {...f, uploading: true} : f)
+            setFiles(prevFiles =>
+                prevFiles.map(f => f === file ? { ...f, uploading: true } : f)
             );
-            
-            // Step 1: Get a presigned URL from our backend
+
             const presignedUrlResponse = await axios.get(
-                `http://localhost:8080/api/v1/images/upload-url`, 
+                `http://localhost:8080/api/v1/images/upload-url`,
                 {
-                    params: { 
+                    params: {
                         itemId: itemId,
-                        contentType: file.type 
+                        contentType: file.type
                     },
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem('token')}`
                     }
                 }
             );
-            
+
             const uploadUrl = presignedUrlResponse.data.uploadUrl;
-            console.log(`Got presigned URL for item ${itemId}:`, uploadUrl);
-            
-            // Step 2: Use the presigned URL to upload directly to S3
+
             await axios.put(uploadUrl, file, {
                 headers: {
                     'Content-Type': file.type,
                 }
             });
-            
-            console.log(`Successfully uploaded file ${file.name} for item ${itemId}`);
-            
-            // Mark file as uploaded
-            setFiles(prevFiles => 
-                prevFiles.map(f => f === file ? {...f, uploading: false, uploaded: true} : f)
+
+            setFiles(prevFiles =>
+                prevFiles.map(f => f === file ? { ...f, uploading: false, uploaded: true } : f)
             );
         } catch (error) {
-            console.error(`Error uploading file ${file.name} for item ${itemId}:`, error);
-            
-            // Mark file as error
-            setFiles(prevFiles => 
-                prevFiles.map(f => f === file ? {...f, uploading: false, error: true} : f)
+            console.error(`Error uploading file ${file.name}:`, error);
+            setFiles(prevFiles =>
+                prevFiles.map(f => f === file ? { ...f, uploading: false, error: true } : f)
             );
-            
-            throw error; // Re-throw to be handled by the caller
+            throw error;
         }
     };
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        
+
         if (!title || !price || !category || !description) {
-            setUploadStatus({
-                success: false,
-                message: "Please fill out all required fields"
-            });
+            showNotification("Please fill out all required fields", "error");
             return;
         }
-        
+
         setIsSubmitting(true);
-        setUploadStatus(null);
-        
+
         try {
-            // Get the current user ID from local storage
             const userId = localStorage.getItem('userId') || "1";
-            
+
             if (!userId) {
-                setUploadStatus({
-                    success: false,
-                    message: 'User not authenticated. Please log in.'
-                });
+                showNotification('User not authenticated. Please log in.', 'error');
                 setIsSubmitting(false);
                 return;
             }
 
-            // Create the listing first
             const response = await axios.post(
                 `http://localhost:8080/api/v1/item/createListing`,
                 {
@@ -141,43 +143,22 @@ const CreateListing: React.FC = () => {
                     }
                 }
             );
-            
-            console.log('Listing created:', response.data);
-            
-            // If we have files to upload and the listing was created successfully
+
             if (files.length > 0 && response.data.success && response.data.itemId) {
                 const itemId = response.data.itemId;
-                
-                // Upload each file
                 const uploadPromises = files.map(file => uploadFileToS3(file, itemId));
                 await Promise.all(uploadPromises);
-                
-                setUploadStatus({
-                    success: true,
-                    message: "Listing created successfully with images!"
-                });
-                
-                // Navigate after successful upload
-                setTimeout(() => {
-                    navigate("/home");
-                }, 2000);
+                showNotification("Listing created successfully with images!", "success");
             } else {
-                setUploadStatus({
-                    success: true,
-                    message: "Listing created successfully!"
-                });
-                
-                // Navigate after successful upload
-                setTimeout(() => {
-                    navigate("/home");
-                }, 2000);
+                showNotification("Listing created successfully!", "success");
             }
+
+            setTimeout(() => {
+                navigate("/home");
+            }, 2000);
         } catch (error) {
             console.error("Error creating listing:", error);
-            setUploadStatus({
-                success: false,
-                message: "Error creating listing. Please try again."
-            });
+            showNotification("Error creating listing. Please try again.", "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -189,296 +170,505 @@ const CreateListing: React.FC = () => {
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            const newFiles = Array.from(e.target.files).map(file => {
-                const uploadedFile = file as UploadedFile;
-                
-                // Create preview URL for images
-                if (file.type.startsWith('image/')) {
-                    uploadedFile.preview = URL.createObjectURL(file);
-                }
-                
-                return uploadedFile;
-            });
-            
-            setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+            addFiles(Array.from(e.target.files));
+        }
+    };
+
+    const addFiles = (newFileList: File[]) => {
+        const newFiles = newFileList.map(file => {
+            const uploadedFile = file as UploadedFile;
+            if (file.type.startsWith('image/')) {
+                uploadedFile.preview = URL.createObjectURL(file);
+            }
+            return uploadedFile;
+        });
+        setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+    };
+
+    const handleDrag = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setDragActive(true);
+        } else if (e.type === "dragleave") {
+            setDragActive(false);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            addFiles(Array.from(e.dataTransfer.files));
         }
     };
 
     const handleButtonClick = () => {
         fileInputRef.current?.click();
     };
-    
+
     const removeFile = (index: number) => {
         setFiles(prevFiles => {
             const newFiles = [...prevFiles];
-            
-            // Revoke object URL to prevent memory leaks
             if (newFiles[index].preview) {
                 URL.revokeObjectURL(newFiles[index].preview!);
             }
-            
             newFiles.splice(index, 1);
             return newFiles;
         });
     };
 
+    const showNotification = (message: string, type: 'success' | 'error') => {
+        setNotification({ message, type });
+    };
+
+    const canProceed = () => {
+        if (activeStep === 0) return files.length > 0;
+        if (activeStep === 1) return title && price && category && description;
+        return true;
+    };
+
     return (
-        <Box sx={{bgcolor: "#f9fafb", minHeight: "100vh", py: 4}}>
-            <Container maxWidth="lg">
-                {/* Heading */}
-                <Box sx={{mb: 3}}>
-                    <Typography variant="h4" sx={{fontWeight: "bold", color: "#6b46c1"}}>
-                        Complete Your Listing
-                    </Typography>
-                </Box>
-
-                {/* Status Alert */}
-                {uploadStatus && (
-                    <Alert 
-                        severity={uploadStatus.success ? "success" : "error"} 
-                        sx={{ mb: 3 }}
-                    >
-                        {uploadStatus.message}
-                    </Alert>
-                )}
-
-                {/* Photos & Video Section */}
-                <Paper
-                    variant="outlined"
-                    sx={{
-                        p: 3,
-                        mb: 4,
-                        borderColor: "#e2e8f0",
-                    }}
+        <PageLayout showCategories={false}>
+            <Snackbar
+                open={!!notification}
+                autoHideDuration={4000}
+                onClose={() => setNotification(null)}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert
+                    severity={notification?.type || 'info'}
+                    variant="filled"
+                    onClose={() => setNotification(null)}
                 >
-                    <Typography variant="h6" sx={{fontWeight: "bold", mb: 1}}>
-                        Photos &amp; Video
-                    </Typography>
-                    <Typography variant="body2" sx={{mb: 2, color: "text.secondary"}}>
-                        You can add up to 12 photos and a 1-minute video. Buyers want to see
-                        all details and angles.
-                    </Typography>
-                    <Box
+                    {notification?.message}
+                </Alert>
+            </Snackbar>
+
+            {/* Header */}
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+                <IconButton
+                    onClick={() => navigate(-1)}
+                    sx={{ mr: 2, color: 'primary.main' }}
+                >
+                    <ArrowBackIcon />
+                </IconButton>
+                <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                    Create New Listing
+                </Typography>
+            </Box>
+
+            {/* Stepper */}
+            <Paper
+                elevation={0}
+                sx={{
+                    p: 3,
+                    mb: 4,
+                    borderRadius: 3,
+                    border: `1px solid ${theme.palette.divider}`,
+                }}
+            >
+                <Stepper activeStep={activeStep} alternativeLabel>
+                    {steps.map((label) => (
+                        <Step key={label}>
+                            <StepLabel>{label}</StepLabel>
+                        </Step>
+                    ))}
+                </Stepper>
+            </Paper>
+
+            <Grid container spacing={4}>
+                {/* Main Content */}
+                <Grid item xs={12} md={8}>
+                    {/* Photos Section */}
+                    <Paper
+                        elevation={0}
                         sx={{
-                            border: "2px dashed #cbd5e0",
-                            borderRadius: 2,
                             p: 3,
-                            textAlign: "center",
+                            mb: 4,
+                            borderRadius: 3,
+                            border: `1px solid ${theme.palette.divider}`,
                         }}
                     >
-                        <Typography variant="body2" sx={{color: "text.secondary", mb: 1}}>
-                            Drag and drop files
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
+                            Photos & Video
                         </Typography>
-                        <input
-                            type="file"
-                            multiple
-                            accept="image/*,video/*"
-                            ref={fileInputRef}
-                            onChange={handleFileUpload}
-                            style={{ display: 'none' }}
-                        />
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            startIcon={<AddPhotoAlternateIcon/>}
+                        <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
+                            Add up to 12 photos and a 1-minute video. Show all details and angles.
+                        </Typography>
+
+                        {/* Drag & Drop Zone */}
+                        <Box
+                            onDragEnter={handleDrag}
+                            onDragLeave={handleDrag}
+                            onDragOver={handleDrag}
+                            onDrop={handleDrop}
+                            sx={{
+                                border: `2px dashed ${dragActive ? theme.palette.primary.main : theme.palette.divider}`,
+                                borderRadius: 3,
+                                p: 4,
+                                textAlign: 'center',
+                                bgcolor: dragActive
+                                    ? alpha(theme.palette.primary.main, 0.05)
+                                    : theme.palette.mode === 'light'
+                                        ? theme.palette.grey[50]
+                                        : alpha(theme.palette.background.paper, 0.5),
+                                transition: 'all 0.2s ease',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    borderColor: theme.palette.primary.main,
+                                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                                }
+                            }}
                             onClick={handleButtonClick}
-                            sx={{textTransform: "none", borderRadius: "20px", fontWeight: "bold"}}
                         >
-                            Upload from computer
-                        </Button>
-                    </Box>
-                    {files.length > 0 && (
-                        <Box sx={{ mt: 2 }}>
-                            <Typography variant="body2" sx={{ fontWeight: "bold" }}>
-                                Selected files ({files.length}):
+                            <AddPhotoAlternateIcon
+                                sx={{
+                                    fontSize: 48,
+                                    color: dragActive ? 'primary.main' : 'text.secondary',
+                                    mb: 2
+                                }}
+                            />
+                            <Typography variant="body1" sx={{ color: 'text.primary', fontWeight: 500, mb: 1 }}>
+                                Drag and drop files here
                             </Typography>
-                            <Grid container spacing={2} sx={{ mt: 1 }}>
-                                {files.map((file, index) => (
-                                    <Grid item xs={6} sm={4} md={3} lg={2} key={index}>
-                                        <Box 
-                                            sx={{ 
-                                                p: 1,
-                                                border: "1px solid #e2e8f0",
-                                                borderRadius: 1,
-                                                position: "relative",
-                                                height: 140,
-                                                display: "flex",
-                                                flexDirection: "column",
-                                                alignItems: "center"
-                                            }}
-                                        >
-                                            {file.preview ? (
-                                                <Box 
-                                                    component="img" 
-                                                    src={file.preview}
-                                                    sx={{ 
-                                                        height: 100, 
-                                                        width: "100%", 
-                                                        objectFit: "cover",
-                                                        borderRadius: 1,
-                                                        mb: 1
-                                                    }}
-                                                />
-                                            ) : (
-                                                <Box 
-                                                    sx={{ 
-                                                        height: 100, 
-                                                        width: "100%", 
-                                                        bgcolor: "#f1f5f9",
-                                                        borderRadius: 1,
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        justifyContent: "center",
-                                                        mb: 1
-                                                    }}
-                                                >
-                                                    {file.type.includes("video") ? "Video" : "File"}
-                                                </Box>
-                                            )}
-                                            
-                                            <Typography variant="caption" noWrap sx={{ width: "100%" }}>
-                                                {file.name}
-                                            </Typography>
-                                            
-                                            {file.uploading && (
-                                                <CircularProgress 
-                                                    size={16} 
-                                                    sx={{ 
-                                                        position: "absolute", 
-                                                        top: 8, 
-                                                        right: 8 
-                                                    }} 
-                                                />
-                                            )}
-                                            
-                                            <Button 
-                                                size="small" 
-                                                color="error" 
-                                                onClick={() => removeFile(index)}
-                                                sx={{ 
-                                                    position: "absolute", 
-                                                    top: 0, 
-                                                    right: 0,
-                                                    minWidth: 32,
-                                                    width: 32,
-                                                    height: 32
+                            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+                                or click to browse
+                            </Typography>
+                            <input
+                                type="file"
+                                multiple
+                                accept="image/*,video/*"
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                                style={{ display: 'none' }}
+                            />
+                            <Button
+                                variant="contained"
+                                startIcon={<AddPhotoAlternateIcon />}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleButtonClick();
+                                }}
+                                sx={{ borderRadius: 2, fontWeight: 600 }}
+                            >
+                                Upload Files
+                            </Button>
+                        </Box>
+
+                        {/* File Preview Grid */}
+                        {files.length > 0 && (
+                            <Box sx={{ mt: 3 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', mb: 2 }}>
+                                    Uploaded Files ({files.length}/12)
+                                </Typography>
+                                <Grid container spacing={2}>
+                                    {files.map((file, index) => (
+                                        <Grid item xs={6} sm={4} md={3} key={index}>
+                                            <Box
+                                                sx={{
+                                                    position: 'relative',
+                                                    borderRadius: 2,
+                                                    overflow: 'hidden',
+                                                    border: `1px solid ${theme.palette.divider}`,
+                                                    bgcolor: theme.palette.mode === 'light'
+                                                        ? theme.palette.grey[50]
+                                                        : theme.palette.grey[900],
                                                 }}
                                             >
-                                                ×
-                                            </Button>
-                                        </Box>
-                                    </Grid>
-                                ))}
+                                                {file.preview ? (
+                                                    <Box
+                                                        component="img"
+                                                        src={file.preview}
+                                                        sx={{
+                                                            width: '100%',
+                                                            height: 120,
+                                                            objectFit: 'cover',
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <Box
+                                                        sx={{
+                                                            height: 120,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                        }}
+                                                    >
+                                                        {file.type.includes("video") ? (
+                                                            <VideocamIcon sx={{ fontSize: 40, color: 'text.secondary' }} />
+                                                        ) : (
+                                                            <ImageIcon sx={{ fontSize: 40, color: 'text.secondary' }} />
+                                                        )}
+                                                    </Box>
+                                                )}
+
+                                                {/* Status Overlay */}
+                                                {(file.uploading || file.uploaded || file.error) && (
+                                                    <Box
+                                                        sx={{
+                                                            position: 'absolute',
+                                                            top: 0,
+                                                            left: 0,
+                                                            right: 0,
+                                                            bottom: 0,
+                                                            bgcolor: alpha(theme.palette.background.default, 0.7),
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                        }}
+                                                    >
+                                                        {file.uploading && <CircularProgress size={32} />}
+                                                        {file.uploaded && <CheckCircleIcon sx={{ fontSize: 32, color: 'success.main' }} />}
+                                                        {file.error && <ErrorIcon sx={{ fontSize: 32, color: 'error.main' }} />}
+                                                    </Box>
+                                                )}
+
+                                                {/* Remove Button */}
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => removeFile(index)}
+                                                    sx={{
+                                                        position: 'absolute',
+                                                        top: 4,
+                                                        right: 4,
+                                                        bgcolor: alpha(theme.palette.background.paper, 0.9),
+                                                        '&:hover': {
+                                                            bgcolor: theme.palette.error.main,
+                                                            color: 'white',
+                                                        }
+                                                    }}
+                                                >
+                                                    <CloseIcon fontSize="small" />
+                                                </IconButton>
+
+                                                {/* File Name */}
+                                                <Box sx={{ p: 1 }}>
+                                                    <Typography
+                                                        variant="caption"
+                                                        noWrap
+                                                        sx={{ color: 'text.secondary', display: 'block' }}
+                                                    >
+                                                        {file.name}
+                                                    </Typography>
+                                                </Box>
+                                            </Box>
+                                        </Grid>
+                                    ))}
+                                </Grid>
+                            </Box>
+                        )}
+                    </Paper>
+
+                    {/* Item Details Form */}
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 3,
+                            borderRadius: 3,
+                            border: `1px solid ${theme.palette.divider}`,
+                        }}
+                    >
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', mb: 3 }}>
+                            Item Details
+                        </Typography>
+
+                        <Box component="form" noValidate autoComplete="off" onSubmit={handleSubmit}>
+                            <Grid container spacing={3}>
+                                {/* Title */}
+                                <Grid item xs={12}>
+                                    <TextField
+                                        required
+                                        fullWidth
+                                        label="Listing Title"
+                                        placeholder="e.g., Vintage Camera, Calculus Textbook 8th Edition"
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                        helperText="Be specific and descriptive"
+                                    />
+                                </Grid>
+
+                                {/* Price */}
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        required
+                                        fullWidth
+                                        label="Price"
+                                        type="number"
+                                        inputProps={{ step: "0.01", min: "0" }}
+                                        placeholder="0.00"
+                                        value={price}
+                                        onChange={(e) => setPrice(e.target.value)}
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <AttachMoneyIcon sx={{ color: 'text.secondary' }} />
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                    />
+                                </Grid>
+
+                                {/* Category */}
+                                <Grid item xs={12} sm={6}>
+                                    <FormControl required fullWidth>
+                                        <InputLabel id="category-label">Category</InputLabel>
+                                        <Select
+                                            labelId="category-label"
+                                            id="category"
+                                            value={category}
+                                            label="Category"
+                                            onChange={handleCategoryChange}
+                                        >
+                                            <MenuItem value="">
+                                                <em>Select a Category</em>
+                                            </MenuItem>
+                                            {categories.map((cat) => (
+                                                <MenuItem key={cat.value} value={cat.value}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <span>{cat.icon}</span>
+                                                        <span>{cat.label}</span>
+                                                    </Box>
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                        <FormHelperText>Choose the best category for your item</FormHelperText>
+                                    </FormControl>
+                                </Grid>
+
+                                {/* Description */}
+                                <Grid item xs={12}>
+                                    <TextField
+                                        required
+                                        fullWidth
+                                        multiline
+                                        rows={5}
+                                        label="Description"
+                                        placeholder="Describe your item in detail. Include condition, brand, dimensions, and any flaws."
+                                        value={description}
+                                        onChange={(e) => setDescription(e.target.value)}
+                                        helperText={`${description.length}/1000 characters`}
+                                        inputProps={{ maxLength: 1000 }}
+                                    />
+                                </Grid>
                             </Grid>
+
+                            {/* Action Buttons */}
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    mt: 4,
+                                    pt: 3,
+                                    borderTop: `1px solid ${theme.palette.divider}`,
+                                }}
+                            >
+                                <Button
+                                    variant="text"
+                                    startIcon={<ArrowBackIcon />}
+                                    onClick={() => navigate(-1)}
+                                    disabled={isSubmitting}
+                                    sx={{ fontWeight: 500 }}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    variant="contained"
+                                    disabled={isSubmitting || !title || !price || !category || !description}
+                                    sx={{
+                                        borderRadius: 2,
+                                        px: 4,
+                                        py: 1.5,
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        'Create Listing'
+                                    )}
+                                </Button>
+                            </Box>
                         </Box>
-                    )}
-                </Paper>
+                    </Paper>
+                </Grid>
 
-                {/* Listing Details Form */}
-                <Paper variant="outlined" sx={{p: 3, borderColor: "#e2e8f0"}}>
-                    <Typography
-                        variant="h6"
-                        sx={{fontWeight: "bold", mb: 1, color: "#6b46c1"}}
+                {/* Sidebar - Tips */}
+                <Grid item xs={12} md={4}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 3,
+                            borderRadius: 3,
+                            border: `1px solid ${theme.palette.divider}`,
+                            position: 'sticky',
+                            top: 100,
+                        }}
                     >
-                        Item Details
-                    </Typography>
-                    <Box
-                        component="form"
-                        noValidate
-                        autoComplete="off"
-                        onSubmit={handleSubmit}
-                    >
-                        <Grid container spacing={3}>
-                            {/* Title */}
-                            <Grid item xs={12} sm={6}>
-                                <TextField
-                                    required
-                                    fullWidth
-                                    label="Listing Title"
-                                    placeholder="e.g., Vintage Camera"
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                />
-                            </Grid>
-                            {/* Price */}
-                            <Grid item xs={12} sm={6}>
-                                <TextField
-                                    required
-                                    fullWidth
-                                    label="Price"
-                                    type="number"
-                                    inputProps={{step: "0.01"}}
-                                    placeholder="e.g., 120.00"
-                                    value={price}
-                                    onChange={(e) => setPrice(e.target.value)}
-                                />
-                            </Grid>
-                            {/* Category */}
-                            <Grid item xs={12} sm={6}>
-                                <FormControl required fullWidth>
-                                    <InputLabel id="category-label">Category</InputLabel>
-                                    <Select
-                                        labelId="category-label"
-                                        id="category"
-                                        value={category}
-                                        label="Category"
-                                        onChange={handleCategoryChange}
-                                    >
-                                        <MenuItem value="">
-                                            <em>Select a Category</em>
-                                        </MenuItem>
-                                        <MenuItem value="Electronics">Electronics</MenuItem>
-                                        <MenuItem value="Textbooks">Textbooks</MenuItem>
-                                        <MenuItem value="Fashion">Fashion (Apparel)</MenuItem>
-                                        <MenuItem value="Sports">Sports Gear</MenuItem>
-                                        <MenuItem value="Collectibles">Collectibles</MenuItem>
-                                        <MenuItem value="Services">Services</MenuItem>
-                                        <MenuItem value="Other">Other (Dorm & Living)</MenuItem>
-                                    </Select>
-                                    <FormHelperText>Please select a category</FormHelperText>
-                                </FormControl>
-                            </Grid>
-                            {/* Description */}
-                            <Grid item xs={12}>
-                                <TextField
-                                    required
-                                    fullWidth
-                                    multiline
-                                    rows={4}
-                                    label="Description"
-                                    placeholder="Provide a clear, detailed description..."
-                                    value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
-                                />
-                            </Grid>
-                        </Grid>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', mb: 2 }}>
+                            Tips for a Great Listing
+                        </Typography>
 
-                        {/* Bottom Buttons (Back on left, Create on right) */}
-                        <Stack direction="row" justifyContent="space-between" mt={3}>
-                            <Button
-                                variant="text"
-                                color="primary"
-                                onClick={() => navigate(-1)}
-                                disabled={isSubmitting}
-                                sx={{textTransform: "none", fontWeight: "bold"}}
-                            >
-                                Back
-                            </Button>
-                            <Button
-                                type="submit"
-                                variant="contained"
-                                color="primary"
-                                disabled={isSubmitting}
-                                startIcon={isSubmitting && <CircularProgress size={24} color="inherit" />}
-                                sx={{textTransform: "none", borderRadius: "20px", fontWeight: "bold"}}
-                            >
-                                {isSubmitting ? "Creating..." : "Create Listing"}
-                            </Button>
-                        </Stack>
-                    </Box>
-                </Paper>
-            </Container>
-        </Box>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Box>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main', mb: 0.5 }}>
+                                    Take Great Photos
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                    Use good lighting and show multiple angles. Include close-ups of any damage or wear.
+                                </Typography>
+                            </Box>
+
+                            <Box>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main', mb: 0.5 }}>
+                                    Write a Clear Title
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                    Include brand, model, size, or edition. Be specific so buyers can find your item.
+                                </Typography>
+                            </Box>
+
+                            <Box>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main', mb: 0.5 }}>
+                                    Price Competitively
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                    Check similar listings to price your item fairly. Consider condition and demand.
+                                </Typography>
+                            </Box>
+
+                            <Box>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.main', mb: 0.5 }}>
+                                    Be Honest in Description
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                    Mention any flaws or defects. Honest listings get better reviews and repeat buyers.
+                                </Typography>
+                            </Box>
+                        </Box>
+
+                        <Box
+                            sx={{
+                                mt: 3,
+                                p: 2,
+                                borderRadius: 2,
+                                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                            }}
+                        >
+                            <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 500 }}>
+                                Need help? Contact support@polymart.edu
+                            </Typography>
+                        </Box>
+                    </Paper>
+                </Grid>
+            </Grid>
+        </PageLayout>
     );
 };
 

@@ -13,6 +13,7 @@ import ViewHistory from "./ViewHistory";
 import NotificationsPage from "./NotificationsPage";
 import SettingsPage from "./SettingsPage";
 import InboxPage from './InboxPage';
+import SavedItemsPage from './SavedItemsPage';
 
 function App() {
     return (
@@ -32,6 +33,7 @@ function App() {
                     <Route path="/notifications" element={<NotificationsPage/>}/>
                     <Route path="/settings" element={<SettingsPage/>}/>
                     <Route path="/inbox" element={<InboxPage />} />
+                    <Route path="/saved" element={<SavedItemsPage />} />
                 </Routes>
             </Router>
         </NotificationProvider>

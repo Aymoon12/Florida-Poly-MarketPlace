@@ -1,35 +1,33 @@
-import React, {useEffect, useState} from 'react';
-import {useNavigate, useParams} from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Alert,
-  Avatar,
-  Box,
-  Breadcrumbs,
-  Button,
-  Card,
-  CardMedia,
-  Chip,
-  CircularProgress,
-  Container,
-  Divider,
-  Grid,
-  IconButton,
-  Link as MuiLink,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Paper,
-  Rating,
-  Stack,
-  Tab,
-  Tabs,
-  TextField,
-  Tooltip,
-  Typography,
+    Alert,
+    Avatar,
+    Box,
+    Breadcrumbs,
+    Button,
+    Chip,
+    Divider,
+    Grid,
+    IconButton,
+    Link as MuiLink,
+    List,
+    ListItem,
+    ListItemIcon,
+    ListItemText,
+    Paper,
+    Rating,
+    Stack,
+    Tab,
+    Tabs,
+    TextField,
+    Tooltip,
+    Typography,
+    useTheme,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import ShareIcon from '@mui/icons-material/Share';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
@@ -39,10 +37,12 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CategoryIcon from '@mui/icons-material/Category';
-import CartIcon from './components/CartIcon';
+import ChatIcon from '@mui/icons-material/Chat';
 import axios from 'axios';
-import {format, formatDistance} from 'date-fns';
+import { format, formatDistance } from 'date-fns';
 import ChatService from './services/ChatService';
+import { PageLayout } from './components/layout';
+import { ItemCard, LoadingState } from './components/common';
 
 interface ItemDetails {
     id: number;
@@ -62,8 +62,9 @@ interface ItemDetails {
 }
 
 const ItemDetailsPage: React.FC = () => {
-    const {itemId} = useParams<{ itemId: string }>();
+    const { itemId } = useParams<{ itemId: string }>();
     const navigate = useNavigate();
+    const theme = useTheme();
     const [item, setItem] = useState<ItemDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -71,7 +72,6 @@ const ItemDetailsPage: React.FC = () => {
     const [quantity, setQuantity] = useState(1);
     const [tabValue, setTabValue] = useState(0);
     const [similarItems, setSimilarItems] = useState<ItemDetails[]>([]);
-    const [loadingSimilar, setLoadingSimilar] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
     const [savedText, setSavedText] = useState('Save Listing');
 
@@ -85,7 +85,6 @@ const ItemDetailsPage: React.FC = () => {
             setError(null);
 
             try {
-                // API call to get item details
                 const response = await axios.get(`http://localhost:8080/api/v1/item/${itemId}/${userId}`, {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("token")}`
@@ -94,8 +93,6 @@ const ItemDetailsPage: React.FC = () => {
 
                 if (response.data) {
                     setItem(response.data);
-                    
-                    // Fetch similar items
                     fetchSimilarItems(response.data.category);
                 } else {
                     throw new Error('Item not found');
@@ -115,10 +112,7 @@ const ItemDetailsPage: React.FC = () => {
 
             try {
                 const response = await axios.get('http://localhost:8080/api/v1/saved/check', {
-                    params: {
-                        userId: userId,
-                        itemId: itemId
-                    },
+                    params: { userId, itemId },
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("token")}`
                     }
@@ -126,52 +120,46 @@ const ItemDetailsPage: React.FC = () => {
 
                 if (response.status === 200) {
                     setIsSaved(response.data);
-                    if (response.data) {
-                        setSavedText('Already Saved');
-                    } else {
-                        setSavedText('Save Listing');
-                    }
+                    setSavedText(response.data ? 'Already Saved' : 'Save Listing');
                 }
             } catch (error) {
                 console.error("Error checking if listing is saved:", error);
                 setIsSaved(false);
             }
-        }
+        };
 
         fetchItemDetails();
         checkIfSaved();
 
         return () => {
             removeWatcher();
-          };
+        };
     }, [itemId]);
 
     const removeWatcher = async () => {
         try {
-          await axios.post(`http://localhost:8080/api/v1/item/decrementWatchers/${itemId}`, {}, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`
-            }
-          });
+            await axios.post(`http://localhost:8080/api/v1/item/decrementWatchers/${itemId}`, {}, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            });
         } catch (error) {
-          console.error('Failed to remove watcher:', error);
+            console.error('Failed to remove watcher:', error);
         }
-      };
+    };
 
     const fetchSimilarItems = async (category: string) => {
         if (!category) return;
 
-        setLoadingSimilar(true);
         try {
             const response = await axios.get(`http://localhost:8080/api/v1/item/getAllListingsByCategory`, {
-                params: {category},
+                params: { category },
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`
                 }
             });
 
             if (response.data && Array.isArray(response.data)) {
-                // Filter out the current item and limit to 4 items
                 const filtered = response.data
                     .filter((item: ItemDetails) => item.id.toString() !== itemId)
                     .slice(0, 4);
@@ -179,8 +167,6 @@ const ItemDetailsPage: React.FC = () => {
             }
         } catch (error) {
             console.error("Error fetching similar items:", error);
-        } finally {
-            setLoadingSimilar(false);
         }
     };
 
@@ -188,13 +174,13 @@ const ItemDetailsPage: React.FC = () => {
         setCurrentImageIndex(index);
     };
 
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);
     };
 
     const handleContactSeller = async () => {
         if (!item) return;
-        
+
         try {
             const userId = localStorage.getItem('userId');
             if (!userId) {
@@ -202,23 +188,18 @@ const ItemDetailsPage: React.FC = () => {
                 navigate('/login');
                 return;
             }
-            
-            // Don't allow messaging yourself
+
             if (item.seller?.id.toString() === userId) {
                 alert('You cannot message yourself');
                 return;
             }
-            
-            // Create a new conversation or get existing one
-            const response = await ChatService.startConversation(
-                {
-                    itemId: item.id,
-                    initialMessage: `Hi, I'm interested in your "${item.title}". Is it still available?`,
-                    userId: userId
-                },
-            );
-            
-            // Navigate to the conversation
+
+            const response = await ChatService.startConversation({
+                itemId: item.id,
+                initialMessage: `Hi, I'm interested in your "${item.title}". Is it still available?`,
+                userId: userId
+            });
+
             navigate(`/inbox?conversation=${response.id}`);
         } catch (error) {
             console.error('Error starting conversation:', error);
@@ -227,10 +208,7 @@ const ItemDetailsPage: React.FC = () => {
     };
 
     const handleBuyNow = () => {
-        // Implement buy now functionality
         if (!item) return;
-
-        // Navigate to checkout page or show modal
         alert(`Processing purchase for ${quantity} x ${item.title}`);
     };
 
@@ -240,8 +218,8 @@ const ItemDetailsPage: React.FC = () => {
         try {
             const response = await axios.post('http://localhost:8080/api/v1/saved/save', null, {
                 params: {
-                userId: localStorage.getItem('userId'),
-                itemId: item.id
+                    userId: localStorage.getItem('userId'),
+                    itemId: item.id
                 },
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -249,7 +227,9 @@ const ItemDetailsPage: React.FC = () => {
             });
 
             if (response.status === 200) {
-            alert("Listing saved successfully");
+                setIsSaved(true);
+                setSavedText('Already Saved');
+                alert("Listing saved successfully");
             } else if (response.status === 208) {
                 alert("Listing already saved");
             } else {
@@ -259,12 +239,9 @@ const ItemDetailsPage: React.FC = () => {
             console.error("Error saving listing:", error);
             alert("Failed to save listing");
         }
-    }
-
-
+    };
 
     const handleAddToCart = async () => {
-        // Implement add to cart functionality
         if (!item) return;
 
         try {
@@ -275,21 +252,14 @@ const ItemDetailsPage: React.FC = () => {
             }
 
             const response = await axios.post('http://localhost:8080/api/v1/cart/add', null, {
-                params: {
-                    userId,
-                    itemId: item.id,
-                    quantity
-                },
+                params: { userId, itemId: item.id, quantity },
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`
                 }
             });
 
             if (response.status === 200) {
-                // Show success message
                 alert(`Added ${quantity} x ${item.title} to cart`);
-                // Optionally navigate to cart
-                // navigate('/cart');
             }
         } catch (err) {
             console.error('Error adding item to cart:', err);
@@ -299,7 +269,6 @@ const ItemDetailsPage: React.FC = () => {
 
     const formatDate = (dateString?: string) => {
         if (!dateString) return 'Unknown date';
-
         try {
             const date = new Date(dateString);
             return format(date, 'MMMM d, yyyy');
@@ -310,53 +279,63 @@ const ItemDetailsPage: React.FC = () => {
 
     const getTimeSincePosting = (dateString?: string) => {
         if (!dateString) return '';
-
         try {
             const date = new Date(dateString);
-            return formatDistance(date, new Date(), {addSuffix: true});
+            return formatDistance(date, new Date(), { addSuffix: true });
         } catch (e) {
             return '';
         }
     };
 
-
-
     if (loading) {
         return (
-            <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh'}}>
-                <CircularProgress/>
-            </Box>
+            <PageLayout showCategories={false}>
+                <LoadingState fullPage message="Loading item details..." />
+            </PageLayout>
         );
     }
 
     if (error || !item) {
         return (
-            <Container maxWidth="lg" sx={{py: 4}}>
-                <Alert severity="error" sx={{mb: 2}}>
-                    {error || 'Item not found'}
-                </Alert>
-                <Button startIcon={<ArrowBackIcon/>} onClick={() => navigate(-1)}>
-                    Go Back
-                </Button>
-            </Container>
+            <PageLayout showCategories={false}>
+                <Box sx={{ py: 4 }}>
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                        {error || 'Item not found'}
+                    </Alert>
+                    <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>
+                        Go Back
+                    </Button>
+                </Box>
+            </PageLayout>
         );
     }
 
     return (
-        <Container maxWidth="lg" sx={{py: 4}}>
+        <PageLayout showCategories={false}>
             {/* Breadcrumbs */}
-            <Breadcrumbs sx={{mb: 3}}>
-                <MuiLink component="button" color="inherit" onClick={() => navigate('/home')}
-                         sx={{textDecoration: 'none'}}>
+            <Breadcrumbs sx={{ mb: 3 }}>
+                <MuiLink
+                    component="button"
+                    color="inherit"
+                    onClick={() => navigate('/home')}
+                    sx={{ textDecoration: 'none', '&:hover': { color: 'primary.main' } }}
+                >
                     Home
                 </MuiLink>
-                <MuiLink component="button" color="inherit" onClick={() => navigate('/listings')}
-                         sx={{textDecoration: 'none'}}>
+                <MuiLink
+                    component="button"
+                    color="inherit"
+                    onClick={() => navigate('/listings')}
+                    sx={{ textDecoration: 'none', '&:hover': { color: 'primary.main' } }}
+                >
                     Listings
                 </MuiLink>
-                <MuiLink component="button" color="inherit"
-                         onClick={() => navigate(`/search?q=${encodeURIComponent(item.category)}`)}
-                         sx={{textDecoration: 'none'}}>
+                <MuiLink
+                    component="button"
+                    color="inherit"
+                    onClick={() => navigate(`/search?q=${encodeURIComponent(item.category)}`)}
+                    sx={{ textDecoration: 'none', '&:hover': { color: 'primary.main' } }}
+                >
                     {item.category}
                 </MuiLink>
                 <Typography color="text.primary">{item.title}</Typography>
@@ -370,16 +349,16 @@ const ItemDetailsPage: React.FC = () => {
                         elevation={0}
                         sx={{
                             overflow: 'hidden',
-                            borderRadius: 2,
-                            border: '1px solid #e2e8f0',
+                            borderRadius: 3,
+                            border: `1px solid ${theme.palette.divider}`,
                             mb: 2,
                             position: 'relative',
                         }}
                     >
-                        <Box sx={{position: 'relative'}}>
-                            <CardMedia
+                        <Box sx={{ position: 'relative' }}>
+                            <Box
                                 component="img"
-                                image={item.imageUrls && item.imageUrls.length > 0
+                                src={item.imageUrls && item.imageUrls.length > 0
                                     ? item.imageUrls[currentImageIndex]
                                     : '/assets/placeholder.png'}
                                 alt={item.title}
@@ -387,30 +366,39 @@ const ItemDetailsPage: React.FC = () => {
                                     width: '100%',
                                     height: 400,
                                     objectFit: 'contain',
-                                    bgcolor: '#f8fafc'
+                                    bgcolor: theme.palette.mode === 'light'
+                                        ? theme.palette.grey[50]
+                                        : theme.palette.grey[900]
                                 }}
                             />
 
-                            {/* Favorite and share buttons overlayed on the image */}
-                            <Box sx={{position: 'absolute', top: 10, right: 10, display: 'flex', gap: 1}}>
-                                <Tooltip title="Add to favorites">
+                            {/* Favorite and share buttons */}
+                            <Box sx={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 1 }}>
+                                <Tooltip title={isSaved ? "Saved" : "Add to favorites"}>
                                     <IconButton
+                                        onClick={handleSaveListing}
                                         sx={{
-                                            bgcolor: 'rgba(255,255,255,0.8)',
-                                            '&:hover': {bgcolor: 'rgba(255,255,255,0.9)'}
+                                            bgcolor: 'background.paper',
+                                            boxShadow: 2,
+                                            '&:hover': { bgcolor: 'background.paper' }
                                         }}
                                     >
-                                        <FavoriteIcon sx={{color: '#e53e3e'}}/>
+                                        {isSaved ? (
+                                            <FavoriteIcon sx={{ color: 'error.main' }} />
+                                        ) : (
+                                            <FavoriteBorderIcon />
+                                        )}
                                     </IconButton>
                                 </Tooltip>
                                 <Tooltip title="Share this item">
                                     <IconButton
                                         sx={{
-                                            bgcolor: 'rgba(255,255,255,0.8)',
-                                            '&:hover': {bgcolor: 'rgba(255,255,255,0.9)'}
+                                            bgcolor: 'background.paper',
+                                            boxShadow: 2,
+                                            '&:hover': { bgcolor: 'background.paper' }
                                         }}
                                     >
-                                        <ShareIcon/>
+                                        <ShareIcon />
                                     </IconButton>
                                 </Tooltip>
                             </Box>
@@ -419,7 +407,7 @@ const ItemDetailsPage: React.FC = () => {
 
                     {/* Thumbnail Images */}
                     {item.imageUrls && item.imageUrls.length > 1 && (
-                        <Stack direction="row" spacing={1} sx={{overflowX: 'auto', pb: 1}}>
+                        <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 1 }}>
                             {item.imageUrls.map((url, index) => (
                                 <Box
                                     key={index}
@@ -427,15 +415,17 @@ const ItemDetailsPage: React.FC = () => {
                                     sx={{
                                         width: 80,
                                         height: 80,
-                                        borderRadius: 1,
-                                        border: index === currentImageIndex ? '2px solid #6b46c1' : '1px solid #e2e8f0',
+                                        borderRadius: 2,
+                                        border: index === currentImageIndex
+                                            ? `2px solid ${theme.palette.primary.main}`
+                                            : `1px solid ${theme.palette.divider}`,
                                         cursor: 'pointer',
                                         overflow: 'hidden',
                                         flexShrink: 0,
                                         transition: 'all 0.2s',
                                         '&:hover': {
                                             transform: 'scale(1.05)',
-                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                                            boxShadow: 3
                                         }
                                     }}
                                 >
@@ -454,84 +444,63 @@ const ItemDetailsPage: React.FC = () => {
                         </Stack>
                     )}
 
-                    {/* Item Description Tabs (for mobile view) */}
-                    <Box sx={{mt: 4, display: {md: 'none'}}}>
+                    {/* Mobile Tabs */}
+                    <Box sx={{ mt: 4, display: { md: 'none' } }}>
                         <Tabs
                             value={tabValue}
                             onChange={handleTabChange}
                             sx={{
                                 borderBottom: 1,
                                 borderColor: 'divider',
-                                '& .MuiTab-root': {
-                                    textTransform: 'none',
-                                    fontWeight: 600,
-                                    color: '#4a5568',
-                                    '&.Mui-selected': {color: '#6b46c1'}
-                                },
-                                '& .MuiTabs-indicator': {bgcolor: '#6b46c1'}
                             }}
                         >
-                            <Tab label="Description"/>
-                            <Tab label="Details"/>
-                            <Tab label="Shipping"/>
+                            <Tab label="Description" />
+                            <Tab label="Details" />
+                            <Tab label="Shipping" />
                         </Tabs>
 
                         {tabValue === 0 && (
-                            <Box sx={{pt: 2}}>
-                                <Typography variant="body1" sx={{color: '#4b5563', whiteSpace: 'pre-line'}}>
+                            <Box sx={{ pt: 2 }}>
+                                <Typography variant="body1" sx={{ color: 'text.secondary', whiteSpace: 'pre-line' }}>
                                     {item.description}
                                 </Typography>
                             </Box>
                         )}
 
                         {tabValue === 1 && (
-                            <Box sx={{pt: 2}}>
+                            <Box sx={{ pt: 2 }}>
                                 <List disablePadding>
-                                    <ListItem disablePadding sx={{py: 1}}>
-                                        <ListItemIcon sx={{minWidth: 40}}>
-                                            <CategoryIcon sx={{color: '#6b46c1'}}/>
+                                    <ListItem disablePadding sx={{ py: 1 }}>
+                                        <ListItemIcon sx={{ minWidth: 40 }}>
+                                            <CategoryIcon color="primary" />
                                         </ListItemIcon>
                                         <ListItemText
                                             primary="Category"
                                             secondary={item.category}
-                                            primaryTypographyProps={{variant: 'body2', color: '#4a5568'}}
-                                            secondaryTypographyProps={{
-                                                variant: 'body1',
-                                                fontWeight: 500,
-                                                color: '#2d3748'
-                                            }}
+                                            primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+                                            secondaryTypographyProps={{ variant: 'body1', fontWeight: 500 }}
                                         />
                                     </ListItem>
-
-                                    <ListItem disablePadding sx={{py: 1}}>
-                                        <ListItemIcon sx={{minWidth: 40}}>
-                                            <CalendarMonthIcon sx={{color: '#6b46c1'}}/>
+                                    <ListItem disablePadding sx={{ py: 1 }}>
+                                        <ListItemIcon sx={{ minWidth: 40 }}>
+                                            <CalendarMonthIcon color="primary" />
                                         </ListItemIcon>
                                         <ListItemText
                                             primary="Posted Date"
                                             secondary={formatDate(item.createdAt)}
-                                            primaryTypographyProps={{variant: 'body2', color: '#4a5568'}}
-                                            secondaryTypographyProps={{
-                                                variant: 'body1',
-                                                fontWeight: 500,
-                                                color: '#2d3748'
-                                            }}
+                                            primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+                                            secondaryTypographyProps={{ variant: 'body1', fontWeight: 500 }}
                                         />
                                     </ListItem>
-
-                                    <ListItem disablePadding sx={{py: 1}}>
-                                        <ListItemIcon sx={{minWidth: 40}}>
-                                            <AccessTimeIcon sx={{color: '#6b46c1'}}/>
+                                    <ListItem disablePadding sx={{ py: 1 }}>
+                                        <ListItemIcon sx={{ minWidth: 40 }}>
+                                            <AccessTimeIcon color="primary" />
                                         </ListItemIcon>
                                         <ListItemText
                                             primary="Listed"
                                             secondary={getTimeSincePosting(item.createdAt)}
-                                            primaryTypographyProps={{variant: 'body2', color: '#4a5568'}}
-                                            secondaryTypographyProps={{
-                                                variant: 'body1',
-                                                fontWeight: 500,
-                                                color: '#2d3748'
-                                            }}
+                                            primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+                                            secondaryTypographyProps={{ variant: 'body1', fontWeight: 500 }}
                                         />
                                     </ListItem>
                                 </List>
@@ -539,37 +508,28 @@ const ItemDetailsPage: React.FC = () => {
                         )}
 
                         {tabValue === 2 && (
-                            <Box sx={{pt: 2}}>
+                            <Box sx={{ pt: 2 }}>
                                 <List disablePadding>
-                                    <ListItem disablePadding sx={{py: 1}}>
-                                        <ListItemIcon sx={{minWidth: 40}}>
-                                            <LocalShippingIcon sx={{color: '#6b46c1'}}/>
+                                    <ListItem disablePadding sx={{ py: 1 }}>
+                                        <ListItemIcon sx={{ minWidth: 40 }}>
+                                            <LocalShippingIcon color="primary" />
                                         </ListItemIcon>
                                         <ListItemText
                                             primary="Shipping"
                                             secondary="Available for pickup on campus"
-                                            primaryTypographyProps={{variant: 'body2', color: '#4a5568'}}
-                                            secondaryTypographyProps={{
-                                                variant: 'body1',
-                                                fontWeight: 500,
-                                                color: '#2d3748'
-                                            }}
+                                            primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+                                            secondaryTypographyProps={{ variant: 'body1', fontWeight: 500 }}
                                         />
                                     </ListItem>
-
-                                    <ListItem disablePadding sx={{py: 1}}>
-                                        <ListItemIcon sx={{minWidth: 40}}>
-                                            <LocationOnIcon sx={{color: '#6b46c1'}}/>
+                                    <ListItem disablePadding sx={{ py: 1 }}>
+                                        <ListItemIcon sx={{ minWidth: 40 }}>
+                                            <LocationOnIcon color="primary" />
                                         </ListItemIcon>
                                         <ListItemText
                                             primary="Location"
                                             secondary="Florida Polytechnic University"
-                                            primaryTypographyProps={{variant: 'body2', color: '#4a5568'}}
-                                            secondaryTypographyProps={{
-                                                variant: 'body1',
-                                                fontWeight: 500,
-                                                color: '#2d3748'
-                                            }}
+                                            primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+                                            secondaryTypographyProps={{ variant: 'body1', fontWeight: 500 }}
                                         />
                                     </ListItem>
                                 </List>
@@ -585,8 +545,8 @@ const ItemDetailsPage: React.FC = () => {
                         sx={{
                             p: 3,
                             height: '100%',
-                            borderRadius: 2,
-                            border: '1px solid #e2e8f0'
+                            borderRadius: 3,
+                            border: `1px solid ${theme.palette.divider}`
                         }}
                     >
                         {/* Category Chip */}
@@ -595,40 +555,42 @@ const ItemDetailsPage: React.FC = () => {
                             size="small"
                             sx={{
                                 mb: 2,
-                                bgcolor: '#f3f4f6',
-                                color: '#6b46c1',
-                                fontWeight: 500
+                                bgcolor: theme.palette.mode === 'light'
+                                    ? 'rgba(83, 45, 142, 0.1)'
+                                    : 'rgba(139, 109, 196, 0.2)',
+                                color: 'primary.main',
+                                fontWeight: 600
                             }}
                         />
 
                         {/* Listing Time */}
-                        <Typography variant="body2" sx={{color: '#718096', mb: 1}}>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
                             Listed {getTimeSincePosting(item.createdAt)}
                         </Typography>
 
                         {/* Title */}
-                        <Typography variant="h4" component="h1" sx={{fontWeight: 700, mb: 2}}>
+                        <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 2, color: 'text.primary' }}>
                             {item.title}
                         </Typography>
 
                         {/* Price */}
-                        <Typography variant="h3" sx={{fontWeight: 700, color: '#6b46c1', mb: 3}}>
+                        <Typography variant="h3" sx={{ fontWeight: 700, color: 'primary.main', mb: 3 }}>
                             ${item.price?.toFixed(2)}
                         </Typography>
 
                         {/* Availability */}
-                        <Box sx={{display: 'flex', alignItems: 'center', mb: 3}}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                             {item.quantity > 0 ? (
                                 <>
-                                    <CheckCircleIcon sx={{color: '#38a169', mr: 1}}/>
-                                    <Typography variant="body1" sx={{color: '#38a169', fontWeight: 500}}>
-                                        In Stock
+                                    <CheckCircleIcon sx={{ color: 'success.main', mr: 1 }} />
+                                    <Typography variant="body1" sx={{ color: 'success.main', fontWeight: 500 }}>
+                                        In Stock ({item.quantity} available)
                                     </Typography>
                                 </>
                             ) : (
                                 <>
-                                    <AccessTimeIcon sx={{color: '#e53e3e', mr: 1}}/>
-                                    <Typography variant="body1" sx={{color: '#e53e3e', fontWeight: 500}}>
+                                    <AccessTimeIcon sx={{ color: 'error.main', mr: 1 }} />
+                                    <Typography variant="body1" sx={{ color: 'error.main', fontWeight: 500 }}>
                                         Out of Stock
                                     </Typography>
                                 </>
@@ -636,17 +598,14 @@ const ItemDetailsPage: React.FC = () => {
                         </Box>
 
                         {/* Quantity */}
-                        <Box sx={{mb: 3}}>
-                            <Typography variant="subtitle1" sx={{fontWeight: 600, mb: 1}}>
+                        <Box sx={{ mb: 3 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
                                 Quantity
                             </Typography>
                             <TextField
                                 type="number"
                                 InputProps={{
-                                    inputProps: {
-                                        min: 1,
-                                        max: item.quantity
-                                    }
+                                    inputProps: { min: 1, max: item.quantity }
                                 }}
                                 value={quantity}
                                 onChange={(e) => {
@@ -656,106 +615,79 @@ const ItemDetailsPage: React.FC = () => {
                                     }
                                 }}
                                 size="small"
-                                sx={{width: 100}}
+                                sx={{ width: 100 }}
                             />
-                            <Typography variant="body2" sx={{color: '#718096', mt: 1}}>
-                                {item.quantity > 0
-                                    ? `${item.quantity} available`
-                                    : 'Out of stock'}
-                            </Typography>
                         </Box>
 
                         {/* Action Buttons */}
-                        <Box sx={{display: 'flex', gap: 2, mb: 4}}>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                size="large"
-                                fullWidth
-                                startIcon={<ShoppingCartIcon/>}
-                                onClick={handleAddToCart}
-                                disabled={item.quantity <= 0}
-                                sx={{
-                                    py: 1.5,
-                                    bgcolor: '#6b46c1',
-                                    '&:hover': {bgcolor: '#5a32a3'},
-                                    borderRadius: 2,
-                                    textTransform: 'none',
-                                    fontWeight: 600
-                                }}
-                            >
-                                Add to Cart
-                            </Button>
+                        <Stack spacing={2} sx={{ mb: 4 }}>
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <Button
+                                    variant="contained"
+                                    size="large"
+                                    fullWidth
+                                    startIcon={<ShoppingCartIcon />}
+                                    onClick={handleAddToCart}
+                                    disabled={item.quantity <= 0}
+                                    sx={{ py: 1.5, borderRadius: 2 }}
+                                >
+                                    Add to Cart
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    size="large"
+                                    fullWidth
+                                    onClick={handleBuyNow}
+                                    disabled={item.quantity <= 0}
+                                    sx={{ py: 1.5, borderRadius: 2 }}
+                                >
+                                    Buy Now
+                                </Button>
+                            </Box>
                             <Button
                                 variant="outlined"
-                                color="primary"
                                 size="large"
                                 fullWidth
-                                onClick={handleBuyNow}
-                                disabled={item.quantity <= 0}
-                                sx={{
-                                    py: 1.5,
-                                    borderColor: '#6b46c1',
-                                    color: '#6b46c1',
-                                    '&:hover': {
-                                        borderColor: '#5a32a3',
-                                        bgcolor: 'rgba(107, 70, 193, 0.04)'
-                                    },
-                                    borderRadius: 2,
-                                    textTransform: 'none',
-                                    fontWeight: 600
-                                }}
-                            >
-                                Buy Now
-                            </Button>
-                            
-                        </Box>
-                        <Button
-                                variant="outlined"
-                                color="primary"
-                                size="large"    
-                                fullWidth
+                                startIcon={isSaved ? <FavoriteIcon /> : <FavoriteBorderIcon />}
                                 onClick={handleSaveListing}
                                 disabled={isSaved}
-                                sx={{
-                                    py: 1.5,
-                                    borderColor: '#6b46c1',
-                                    color: '#6b46c1',
-                                    '&:hover': {
-                                        borderColor: '#5a32a3',
-                                        bgcolor: 'rgba(107, 70, 193, 0.04)'
-                                    },
-                                    borderRadius: 2,
-                                    textTransform: 'none',
-                                    fontWeight: 600
-                                }}
+                                sx={{ py: 1.5, borderRadius: 2 }}
                             >
                                 {savedText}
                             </Button>
-
-                        <Box>
-                            
-                        </Box>
+                        </Stack>
 
                         {/* Seller Information */}
-                        <Box sx={{mb: 3, p: 2, bgcolor: '#f8fafc', borderRadius: 2}}>
-                            <Typography variant="h6"
-                                        sx={{fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center'}}>
-                                <PersonIcon sx={{mr: 1, color: '#6b46c1'}}/>
+                        <Paper
+                            elevation={0}
+                            sx={{
+                                mb: 3,
+                                p: 2.5,
+                                bgcolor: theme.palette.mode === 'light'
+                                    ? theme.palette.grey[50]
+                                    : theme.palette.grey[800],
+                                borderRadius: 2
+                            }}
+                        >
+                            <Typography
+                                variant="h6"
+                                sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center' }}
+                            >
+                                <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
                                 Seller Information
                             </Typography>
 
-                            <Box sx={{display: 'flex', alignItems: 'center', mb: 2}}>
-                                <Avatar sx={{mr: 2, bgcolor: '#6b46c1'}}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <Avatar sx={{ mr: 2, bgcolor: 'primary.main', width: 48, height: 48 }}>
                                     {item.seller?.username?.charAt(0) || 'S'}
                                 </Avatar>
                                 <Box>
-                                    <Typography variant="subtitle1" sx={{fontWeight: 600}}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                                         {item.seller?.username || 'Florida Poly Student'}
                                     </Typography>
-                                    <Box sx={{display: 'flex', alignItems: 'center'}}>
-                                        <Rating value={4.5} precision={0.5} size="small" readOnly sx={{mr: 1}}/>
-                                        <Typography variant="body2" sx={{color: '#718096'}}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Rating value={4.5} precision={0.5} size="small" readOnly sx={{ mr: 1 }} />
+                                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                                             4.5 (10 reviews)
                                         </Typography>
                                     </Box>
@@ -763,72 +695,61 @@ const ItemDetailsPage: React.FC = () => {
                             </Box>
 
                             <Button
-                                variant="outlined"
-                                color="primary"
+                                variant="contained"
                                 fullWidth
+                                startIcon={<ChatIcon />}
                                 onClick={handleContactSeller}
-                                sx={{
-                                    borderColor: '#6b46c1',
-                                    color: '#6b46c1',
-                                    '&:hover': {
-                                        borderColor: '#5a32a3',
-                                        bgcolor: 'rgba(107, 70, 193, 0.04)'
-                                    },
-                                    textTransform: 'none',
-                                    fontWeight: 600
-                                }}
+                                sx={{ borderRadius: 2 }}
                             >
                                 Contact Seller
                             </Button>
-                        </Box>
+                        </Paper>
 
-                        {/* Detailed Description (for desktop view) */}
-                        <Box sx={{display: {xs: 'none', md: 'block'}}}>
-                            <Typography variant="h6" sx={{fontWeight: 600, mb: 2}}>
+                        {/* Description (Desktop) */}
+                        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                                 Description
                             </Typography>
-
-                            <Typography variant="body1" sx={{color: '#4b5563', whiteSpace: 'pre-line', mb: 3}}>
+                            <Typography variant="body1" sx={{ color: 'text.secondary', whiteSpace: 'pre-line', mb: 3 }}>
                                 {item.description}
                             </Typography>
 
-                            <Divider sx={{mb: 3}}/>
+                            <Divider sx={{ mb: 3 }} />
 
-                            {/* Item Details */}
-                            <Typography variant="h6" sx={{fontWeight: 600, mb: 2}}>
+                            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                                 Item Details
                             </Typography>
 
-                            <Grid container spacing={2} sx={{mb: 3}}>
+                            <Grid container spacing={2}>
                                 <Grid item xs={6}>
-                                    <Typography variant="body2" sx={{color: '#718096'}}>
+                                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                                         Category
                                     </Typography>
-                                    <Typography variant="body1" sx={{fontWeight: 500}}>
+                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
                                         {item.category}
                                     </Typography>
                                 </Grid>
                                 <Grid item xs={6}>
-                                    <Typography variant="body2" sx={{color: '#718096'}}>
+                                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                                         Listed
                                     </Typography>
-                                    <Typography variant="body1" sx={{fontWeight: 500}}>
+                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
                                         {formatDate(item.createdAt)}
                                     </Typography>
                                 </Grid>
                                 <Grid item xs={6}>
-                                    <Typography variant="body2" sx={{color: '#718096'}}>
+                                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                                         Item ID
                                     </Typography>
-                                    <Typography variant="body1" sx={{fontWeight: 500}}>
+                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
                                         {item.id}
                                     </Typography>
                                 </Grid>
                                 <Grid item xs={6}>
-                                    <Typography variant="body2" sx={{color: '#718096'}}>
+                                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                                         Location
                                     </Typography>
-                                    <Typography variant="body1" sx={{fontWeight: 500}}>
+                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
                                         Florida Polytechnic University
                                     </Typography>
                                 </Grid>
@@ -840,54 +761,31 @@ const ItemDetailsPage: React.FC = () => {
 
             {/* Similar Items Section */}
             {similarItems.length > 0 && (
-                <Box sx={{mt: 6}}>
-                    <Typography variant="h5" sx={{fontWeight: 700, mb: 3}}>
+                <Box sx={{ mt: 6 }}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, color: 'text.primary' }}>
                         Similar Items
                     </Typography>
 
                     <Grid container spacing={3}>
-                        {similarItems.map((item) => (
-                            <Grid item xs={12} sm={6} md={3} key={item.id}>
-                                <Card
-                                    elevation={0}
-                                    sx={{
-                                        borderRadius: 2,
-                                        transition: 'all 0.2s',
-                                        border: '1px solid #e5e7eb',
-                                        overflow: 'hidden',
-                                        '&:hover': {
-                                            transform: 'translateY(-4px)',
-                                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)'
-                                        },
-                                        cursor: 'pointer'
+                        {similarItems.map((similarItem) => (
+                            <Grid item xs={12} sm={6} md={3} key={similarItem.id}>
+                                <ItemCard
+                                    item={{
+                                        id: similarItem.id,
+                                        title: similarItem.title,
+                                        price: similarItem.price,
+                                        category: similarItem.category,
+                                        imageUrls: similarItem.imageUrls
                                     }}
-                                    onClick={() => navigate(`/item/${item.id}`)}
-                                >
-                                    <CardMedia
-                                        component="img"
-                                        height="160"
-                                        image={item.imageUrls && item.imageUrls.length > 0
-                                            ? item.imageUrls[0]
-                                            : '/assets/placeholder.png'}
-                                        alt={item.title}
-                                        sx={{objectFit: "cover"}}
-                                    />
-                                    <Box sx={{p: 2}}>
-                                        <Typography variant="subtitle1" sx={{fontWeight: 600, mb: 1, color: '#4a5568'}}>
-                                            {item.title}
-                                        </Typography>
-                                        <Typography variant="h6" sx={{fontWeight: 700, color: '#6b46c1'}}>
-                                            ${item.price?.toFixed(2)}
-                                        </Typography>
-                                    </Box>
-                                </Card>
+                                    showFavorite={true}
+                                />
                             </Grid>
                         ))}
                     </Grid>
                 </Box>
             )}
-        </Container>
+        </PageLayout>
     );
 };
 
-export default ItemDetailsPage; 
+export default ItemDetailsPage;

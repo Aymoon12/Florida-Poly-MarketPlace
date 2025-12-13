@@ -91,6 +91,23 @@ public class SavedListingService {
 		}
 	}
 
+	public List<ItemDto> getSavedListings( Long userId ) {
+
+		try {
+			List<SavedListing> savedListings =
+					savedListingRepository.findAllByUserId( userId ).orElse( Collections.emptyList() );
+
+			return savedListings.stream().map( savedListing -> {
+				Item item = savedListing.getItem();
+				List<String> imageUrls = s3Service.getItemImagesUrls( item.getId() );
+				return ItemDto.from( item, imageUrls );
+			} ).collect( Collectors.toList() );
+		} catch ( Exception e ) {
+			System.err.println( "Error fetching saved listings: " + e.getMessage() );
+			return Collections.emptyList();
+		}
+	}
+
 	/**
 	 * Check if an item is saved by a user
 	 */

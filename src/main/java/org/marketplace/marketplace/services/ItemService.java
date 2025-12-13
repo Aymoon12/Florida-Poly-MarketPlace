@@ -5,15 +5,14 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
 import org.marketplace.marketplace.dto.ItemDto;
 import org.marketplace.marketplace.entities.Category;
 import org.marketplace.marketplace.entities.Item;
+import org.marketplace.marketplace.entities.SavedListing;
 import org.marketplace.marketplace.entities.Status;
 import org.marketplace.marketplace.entities.User;
 import org.marketplace.marketplace.entities.ViewHistory;
@@ -38,9 +37,7 @@ public class ItemService {
 	private final UserRepository userRepository;
 	private final UserService userService;
 	private final S3Service s3Service;
-
-	// In memory watchers cache
-	private final Map<Long, Integer> watchers = new ConcurrentHashMap<>();
+	private final ItemWatcherService watcherService;
 
 	@Transactional
 	public Long addItem( final ItemRequest itemRequest ) {
@@ -70,6 +67,8 @@ public class ItemService {
 			Item item = itemRepository.findById( itemId ).orElseThrow();
 			// Delete associated images
 			s3Service.deleteItemImages( itemId );
+			// Reset watchers
+			watcherService.resetWatchers( itemId );
 			itemRepository.delete( item );
 			return true;
 
@@ -136,17 +135,25 @@ public class ItemService {
 	public ItemDto getItemById( Long userId, Long itemId ) {
 
 		try {
-			Item item = itemRepository.findById( itemId )
-					.orElseThrow( () -> new NoSuchElementException( "Item not found with id: " + itemId ) );
+
+			Item item = savedItem( itemId, userId );
+
+			if ( item == null ) {
+				item = itemRepository.findById( itemId )
+						.orElseThrow( () -> new NoSuchElementException( "Item not found with id: " + itemId ) );
+			}
 
 			List<String> imageUrls = s3Service.getItemImagesUrls( itemId );
 			userService.viewItem( userId, item );
 			item.setViews( item.getViews() + 1 );
 			itemRepository.save( item );
 			log.info( "Item viewed: {}, views: {}", itemId, item.getViews() );
-			watchers.put( itemId, watchers.getOrDefault( itemId, 0 ) + 1 );
-			log.info( "Watchers: {}", watchers.get( itemId ) );
-			return ItemDto.from( item, imageUrls );
+
+			// Use the watcher service
+			int watcherCount = watcherService.incrementWatchers( itemId );
+			log.info( "Watchers for item {}: {}", itemId, watcherCount );
+
+			return ItemDto.from( item, imageUrls, watcherCount );
 		} catch ( Exception e ) {
 			log.error( "Error fetching item with id: {}", itemId, e );
 			return null;
@@ -176,8 +183,8 @@ public class ItemService {
 		List<ItemDto> itemDtos = new ArrayList<>();
 		for ( Item item : recent ) {
 			List<String> imageUrls = s3Service.getItemImagesUrls( item.getId() );
-			itemDtos.add( ItemDto.from( item, imageUrls, watchers.getOrDefault( item.getId(), 0 ) ) );
-			;
+			int watcherCount = watcherService.getWatcherCount( item.getId() );
+			itemDtos.add( ItemDto.from( item, imageUrls, watcherCount ) );
 		}
 		return itemDtos;
 	}
@@ -199,12 +206,18 @@ public class ItemService {
 
 	public void decrementWatchers( Long itemId ) {
 
-		try {
-			watchers.put( itemId, watchers.get( itemId ) != null ? watchers.get( itemId ) - 1 : 0 );
-			log.info( "Watcher left item: {}", itemId );
-		} catch ( final Exception e ) {
-			log.error( e.getMessage(), e );
+		watcherService.decrementWatchers( itemId );
+	}
+
+	private Item savedItem( Long itemId, Long userId ) {
+
+		User user = userRepository.findById( userId ).orElse( null );
+
+		if ( user != null ) {
+			return user.getSavedListings().stream().map( SavedListing::getItem )
+					.filter( item -> item.getId().equals( itemId ) ).findFirst().orElse( null );
 		}
+		return null;
 	}
 
 }

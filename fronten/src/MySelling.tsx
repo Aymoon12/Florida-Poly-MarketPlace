@@ -1,24 +1,47 @@
-import {useEffect, useState} from "react";
-import {useNavigate} from "react-router-dom";
-import polylogo from "./assets/poly-logo.webp";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     Box,
     Button,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemText,
+    Card,
+    CardMedia,
+    Chip,
+    Grid,
+    IconButton,
+    Menu,
+    MenuItem,
     Paper,
     Table,
     TableBody,
     TableCell,
+    TableContainer,
     TableHead,
     TableRow,
     Typography,
-    CircularProgress,
+    useTheme,
+    alpha,
+    Tabs,
+    Tab,
     Alert,
+    Snackbar,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogContentText,
+    DialogActions,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import InventoryIcon from "@mui/icons-material/Inventory";
+import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 import axios from "axios";
+import { PageLayout, DashboardSidebar } from './components/layout';
+import { LoadingState, EmptyState, StatusBadge } from './components/common';
 
 interface Listing {
     id: number;
@@ -28,290 +51,501 @@ interface Listing {
     watchers: number;
     views: number;
     status: string;
+    imageUrls?: string[];
+    createdAt?: string;
 }
 
+interface TabPanelProps {
+    children?: React.ReactNode;
+    index: number;
+    value: number;
+}
+
+const TabPanel = (props: TabPanelProps) => {
+    const { children, value, index, ...other } = props;
+    return (
+        <div role="tabpanel" hidden={value !== index} {...other}>
+            {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+        </div>
+    );
+};
+
 const MySelling = () => {
+    const theme = useTheme();
+    const navigate = useNavigate();
     const [listings, setListings] = useState<Listing[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const navigate = useNavigate();
+    const [tabValue, setTabValue] = useState(0);
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     useEffect(() => {
-        const fetchListings = async () => {
-            setLoading(true);
-            setError(null);
-            
-            try {
-                const userId = localStorage.getItem('userId');
-                if (!userId) {
-                    setError('User not authenticated');
-                    setLoading(false);
-                    return;
-                }
-                
-                // Fetch user's active listings
-                const response = await axios.get(`http://localhost:8080/api/v1/item/getAllActiveListings`, {
-                    params: { userId },
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`
-                    }
-                });
-                
-                if (response.data && Array.isArray(response.data)) {
-                    // Transform the response to match the Listing interface
-                    const formattedListings = response.data.map(item => ({
-                        id: item.id,
-                        title: item.title,
-                        category: item.category,
-                        price: item.price,
-                        // These might not be available in the API response
-                        watchers: item.watchers || 0,
-                        views: item.views || 0,
-                        status: item.status || 'Active'
-                    }));
-                    
-                    setListings(formattedListings);
-                }
-            } catch (err) {
-                console.error('Error fetching listings:', err);
-                setError('Failed to load your listings. Please try again later.');
-                
-                // Fallback to dummy data
-                const dummyListings: Listing[] = [
-                    {
-                        id: 1,
-                        title: "Vintage Camera",
-                        category: "Electronics",
-                        price: 120.0,
-                        watchers: 5,
-                        views: 32,
-                        status: "Active",
-                    },
-                    {
-                        id: 2,
-                        title: "Old Book Collection",
-                        category: "Books",
-                        price: 60.0,
-                        watchers: 2,
-                        views: 19,
-                        status: "Active",
-                    },
-                ];
-                setListings(dummyListings);
-            } finally {
-                setLoading(false);
-            }
-        };
-        
         fetchListings();
     }, []);
 
-    const handleDeleteListing = async (itemId: number) => {
+    const fetchListings = async () => {
+        setLoading(true);
+        setError(null);
+
         try {
-            await axios.delete(`http://localhost:8080/api/v1/item/deleteListing`, {
-                params: { itemId },
+            const userId = localStorage.getItem('userId');
+            if (!userId) {
+                setError('User not authenticated');
+                setLoading(false);
+                return;
+            }
+
+            const response = await axios.get(`http://localhost:8080/api/v1/item/getAllActiveListings`, {
+                params: { userId },
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`
                 }
             });
-            
-            // Remove the item from the listings
-            setListings(listings.filter(listing => listing.id !== itemId));
+
+            if (response.data && Array.isArray(response.data)) {
+                const formattedListings = response.data.map(item => ({
+                    id: item.id,
+                    title: item.title,
+                    category: item.category,
+                    price: item.price,
+                    watchers: item.watchers || 0,
+                    views: item.views || 0,
+                    status: item.status || 'Active',
+                    imageUrls: item.imageUrls || [],
+                    createdAt: item.createdAt,
+                }));
+                setListings(formattedListings);
+            }
         } catch (err) {
-            console.error('Error deleting listing:', err);
-            alert('Failed to delete the listing. Please try again.');
+            console.error('Error fetching listings:', err);
+            setError('Failed to load your listings. Please try again later.');
+        } finally {
+            setLoading(false);
         }
     };
 
-    if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                <CircularProgress />
-            </Box>
-        );
-    }
+    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, listing: Listing) => {
+        setAnchorEl(event.currentTarget);
+        setSelectedListing(listing);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleDeleteClick = () => {
+        setDeleteDialogOpen(true);
+        handleMenuClose();
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!selectedListing) return;
+
+        try {
+            await axios.delete(`http://localhost:8080/api/v1/item/deleteListing`, {
+                params: { itemId: selectedListing.id },
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            });
+            setListings(listings.filter(listing => listing.id !== selectedListing.id));
+            setNotification({ message: 'Listing deleted successfully', type: 'success' });
+        } catch (err) {
+            console.error('Error deleting listing:', err);
+            setNotification({ message: 'Failed to delete listing', type: 'error' });
+        } finally {
+            setDeleteDialogOpen(false);
+            setSelectedListing(null);
+        }
+    };
+
+    const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+        setTabValue(newValue);
+    };
+
+    const getFilteredListings = () => {
+        switch (tabValue) {
+            case 0:
+                return listings;
+            case 1:
+                return listings.filter(l => l.status.toLowerCase() === 'active');
+            case 2:
+                return listings.filter(l => l.status.toLowerCase() === 'sold');
+            case 3:
+                return listings.filter(l => l.status.toLowerCase() === 'pending');
+            default:
+                return listings;
+        }
+    };
+
+    const stats = {
+        totalListings: listings.length,
+        activeListings: listings.filter(l => l.status.toLowerCase() === 'active').length,
+        totalViews: listings.reduce((sum, l) => sum + l.views, 0),
+        totalRevenue: listings.filter(l => l.status.toLowerCase() === 'sold').reduce((sum, l) => sum + l.price, 0),
+    };
+
+    const filteredListings = getFilteredListings();
 
     return (
-        <Box sx={{display: "flex", minHeight: "100vh", backgroundColor: "#f8fafc"}}>
-            {/* Sidebar */}
-            <Box
-                sx={{
-                    width: 280,
-                    backgroundColor: "#fff",
-                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-                    display: "flex",
-                    flexDirection: "column",
-                    p: 3,
-                    position: "fixed",
-                    height: "100vh",
-                    zIndex: 1,
-                }}
+        <PageLayout variant="dashboard" showCategories={false} showFooter={false}>
+            <Snackbar
+                open={!!notification}
+                autoHideDuration={4000}
+                onClose={() => setNotification(null)}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
             >
-                <Box
-                    component="img"
-                    src={polylogo}
-                    alt="Logo"
-                    sx={{height: 60, width: 60, mb: 3}}
-                />
-                <Typography variant="h4" sx={{
-                    fontWeight: "bold",
-                    background: "linear-gradient(45deg, #6b46c1 30%, #805ad5 90%)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    mb: 3
+                <Alert severity={notification?.type || 'info'} variant="filled" onClose={() => setNotification(null)}>
+                    {notification?.message}
+                </Alert>
+            </Snackbar>
+
+            <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 64px)' }}>
+                {/* Sidebar */}
+                <DashboardSidebar activeItem="My Selling" />
+
+                {/* Main Content */}
+                <Box sx={{
+                    flex: 1,
+                    p: { xs: 2, md: 4 },
+                    ml: { xs: 0, md: '260px' },
+                    maxWidth: { md: 'calc(100% - 260px)' },
                 }}>
-                    Dashboard
-                </Typography>
-                <List sx={{flexGrow: 1}}>
-                    {[
-                        {label: "Home", path: "/home"},
-                        {label: "Dashboard", path: "/listings"},
-                        {label: "My Selling", path: "/myselling"},
-                        {label: "My Buying", path: "/mybuying"},
-                        {label: "Notifications", path: "/notifications"},
-                        {label: "Settings", path: "/settings"},
-                    ].map((item) => (
-                        <ListItem key={item.label} disablePadding sx={{mb: 1}}>
-                            <ListItemButton 
-                                onClick={() => navigate(item.path)}
+                    {/* Header */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                        <Box>
+                            <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                                My Listings
+                            </Typography>
+                            <Typography variant="body1" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                                Manage and track your marketplace listings
+                            </Typography>
+                        </Box>
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => navigate("/create-listing")}
+                            sx={{ borderRadius: 2, fontWeight: 600, px: 3 }}
+                        >
+                            Create Listing
+                        </Button>
+                    </Box>
+
+                    {/* Stats Cards */}
+                    <Grid container spacing={3} sx={{ mb: 4 }}>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Paper
+                                elevation={0}
                                 sx={{
-                                    borderRadius: 2,
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(107, 70, 193, 0.08)',
-                                    }
+                                    p: 3,
+                                    borderRadius: 3,
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 2,
                                 }}
                             >
-                                <ListItemText
-                                    primary={item.label}
-                                    primaryTypographyProps={{
-                                        variant: "body1",
-                                        sx: {
-                                            color: "#4a5568",
-                                            textTransform: "none",
-                                            fontWeight: 500
-                                        },
+                                <Box
+                                    sx={{
+                                        width: 48,
+                                        height: 48,
+                                        borderRadius: 2,
+                                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
                                     }}
-                                />
-                            </ListItemButton>
-                        </ListItem>
-                    ))}
-                </List>
-            </Box>
+                                >
+                                    <InventoryIcon sx={{ color: 'primary.main' }} />
+                                </Box>
+                                <Box>
+                                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                                        {stats.totalListings}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                        Total Listings
+                                    </Typography>
+                                </Box>
+                            </Paper>
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 3,
+                                    borderRadius: 3,
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 2,
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        width: 48,
+                                        height: 48,
+                                        borderRadius: 2,
+                                        bgcolor: alpha(theme.palette.success.main, 0.1),
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    <TrendingUpIcon sx={{ color: 'success.main' }} />
+                                </Box>
+                                <Box>
+                                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                                        {stats.activeListings}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                        Active
+                                    </Typography>
+                                </Box>
+                            </Paper>
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 3,
+                                    borderRadius: 3,
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 2,
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        width: 48,
+                                        height: 48,
+                                        borderRadius: 2,
+                                        bgcolor: alpha(theme.palette.info.main, 0.1),
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    <RemoveRedEyeIcon sx={{ color: 'info.main' }} />
+                                </Box>
+                                <Box>
+                                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                                        {stats.totalViews}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                        Total Views
+                                    </Typography>
+                                </Box>
+                            </Paper>
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 3,
+                                    borderRadius: 3,
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 2,
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        width: 48,
+                                        height: 48,
+                                        borderRadius: 2,
+                                        bgcolor: alpha(theme.palette.warning.main, 0.1),
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    <AttachMoneyIcon sx={{ color: 'warning.main' }} />
+                                </Box>
+                                <Box>
+                                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                                        ${stats.totalRevenue.toFixed(0)}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                        Revenue
+                                    </Typography>
+                                </Box>
+                            </Paper>
+                        </Grid>
+                    </Grid>
 
-            {/* Main Content */}
-            <Box sx={{flex: 1, p: 4, ml: "280px"}}>
-                {error && (
-                    <Alert severity="error" sx={{ mb: 3 }}>
-                        {error}
-                    </Alert>
-                )}
-            
-                {/* Page Header */}
-                <Paper sx={{p: 2, mb: 3, boxShadow: 2}}>
-                    <Typography variant="h5" sx={{fontWeight: "bold", color: "#6b46c1"}}>
-                        Manage Active Listings
-                    </Typography>
-                    <Typography variant="body1" sx={{color: "#718096", mt: 1}}>
-                        View and manage all of your listings. Adjust prices, edit descriptions, or create new listings.
-                    </Typography>
-                </Paper>
-
-                {/* Action Bar */}
-                <Box sx={{display: "flex", justifyContent: "flex-end", mb: 2}}>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => navigate("/create-listing")}
-                        sx={{borderRadius: "20px", textTransform: "none", fontWeight: "bold"}}
+                    {/* Tabs and Table */}
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            borderRadius: 3,
+                            border: `1px solid ${theme.palette.divider}`,
+                            overflow: 'hidden',
+                        }}
                     >
-                        + Create Listing
-                    </Button>
-                </Box>
+                        <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3 }}>
+                            <Tabs value={tabValue} onChange={handleTabChange}>
+                                <Tab label={`All (${listings.length})`} />
+                                <Tab label={`Active (${listings.filter(l => l.status.toLowerCase() === 'active').length})`} />
+                                <Tab label={`Sold (${listings.filter(l => l.status.toLowerCase() === 'sold').length})`} />
+                                <Tab label={`Pending (${listings.filter(l => l.status.toLowerCase() === 'pending').length})`} />
+                            </Tabs>
+                        </Box>
 
-                {/* Listings Table */}
-                <Paper>
-                    <Table>
-                        <TableHead sx={{backgroundColor: "#f3f4f6"}}>
-                            <TableRow>
-                                <TableCell>Title</TableCell>
-                                <TableCell>Category</TableCell>
-                                <TableCell>Price</TableCell>
-                                <TableCell>Views</TableCell>
-                                <TableCell>Watchers</TableCell>
-                                <TableCell>Status</TableCell>
-                                <TableCell>Actions</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {listings.length > 0 ? (
-                                listings.map((listing) => (
-                                    <TableRow key={listing.id} hover>
-                                        <TableCell>{listing.title}</TableCell>
-                                        <TableCell>{listing.category}</TableCell>
-                                        <TableCell>${listing.price.toFixed(2)}</TableCell>
-                                        <TableCell>{listing.views}</TableCell>
-                                        <TableCell>{listing.watchers}</TableCell>
-                                        <TableCell>
-                                            <Box
-                                                sx={{
-                                                    display: "inline-block",
-                                                    bgcolor: listing.status === "Active" ? "#ebf8ff" : "#fff5f5",
-                                                    color: listing.status === "Active" ? "#3182ce" : "#e53e3e",
-                                                    borderRadius: "50px",
-                                                    px: 2,
-                                                    py: 0.5,
-                                                    fontWeight: "medium",
-                                                    fontSize: "0.875rem",
-                                                }}
+                        {loading ? (
+                            <Box sx={{ p: 4 }}>
+                                <LoadingState message="Loading your listings..." />
+                            </Box>
+                        ) : error ? (
+                            <Alert severity="error" sx={{ m: 3 }}>{error}</Alert>
+                        ) : filteredListings.length === 0 ? (
+                            <Box sx={{ p: 4 }}>
+                                <EmptyState
+                                    type="listings"
+                                    actionLabel="Create Your First Listing"
+                                    onAction={() => navigate('/create-listing')}
+                                />
+                            </Box>
+                        ) : (
+                            <TableContainer>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{ fontWeight: 600 }}>Item</TableCell>
+                                            <TableCell sx={{ fontWeight: 600 }}>Category</TableCell>
+                                            <TableCell sx={{ fontWeight: 600 }}>Price</TableCell>
+                                            <TableCell sx={{ fontWeight: 600 }}>Views</TableCell>
+                                            <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                                            <TableCell sx={{ fontWeight: 600 }} align="right">Actions</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {filteredListings.map((listing) => (
+                                            <TableRow
+                                                key={listing.id}
+                                                hover
+                                                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                                             >
-                                                {listing.status}
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Box sx={{display: "flex", gap: 1}}>
-                                                <Button
-                                                    variant="outlined"
-                                                    size="small"
-                                                    sx={{
-                                                        borderRadius: "50px",
-                                                        textTransform: "none",
-                                                        fontSize: "0.75rem",
-                                                    }}
-                                                    onClick={() => navigate(`/item/${listing.id}`)}
-                                                >
-                                                    View
-                                                </Button>
-                                                <Button
-                                                    variant="outlined"
-                                                    size="small"
-                                                    color="error"
-                                                    sx={{
-                                                        borderRadius: "50px",
-                                                        textTransform: "none",
-                                                        fontSize: "0.75rem",
-                                                    }}
-                                                    onClick={() => handleDeleteListing(listing.id)}
-                                                >
-                                                    Delete
-                                                </Button>
-                                            </Box>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={7} align="center">
-                                        <Typography variant="body1" sx={{ py: 2 }}>
-                                            No active listings found. Create a new listing to get started!
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </Paper>
+                                                <TableCell>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                        <Card
+                                                            elevation={0}
+                                                            sx={{
+                                                                width: 56,
+                                                                height: 56,
+                                                                borderRadius: 2,
+                                                                overflow: 'hidden',
+                                                                border: `1px solid ${theme.palette.divider}`,
+                                                            }}
+                                                        >
+                                                            <CardMedia
+                                                                component="img"
+                                                                height="56"
+                                                                image={listing.imageUrls?.[0] || '/assets/placeholder.png'}
+                                                                alt={listing.title}
+                                                                sx={{ objectFit: 'cover' }}
+                                                            />
+                                                        </Card>
+                                                        <Box>
+                                                            <Typography
+                                                                variant="body1"
+                                                                sx={{
+                                                                    fontWeight: 600,
+                                                                    color: 'text.primary',
+                                                                    cursor: 'pointer',
+                                                                    '&:hover': { color: 'primary.main' }
+                                                                }}
+                                                                onClick={() => navigate(`/item/${listing.id}`)}
+                                                            >
+                                                                {listing.title}
+                                                            </Typography>
+                                                        </Box>
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Chip
+                                                        label={listing.category}
+                                                        size="small"
+                                                        sx={{
+                                                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                                            color: 'primary.main',
+                                                            fontWeight: 500,
+                                                        }}
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body1" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                                                        ${listing.price.toFixed(2)}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                                        {listing.views}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <StatusBadge status={listing.status} />
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={(e) => handleMenuOpen(e, listing)}
+                                                    >
+                                                        <MoreVertIcon />
+                                                    </IconButton>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        )}
+                    </Paper>
+                </Box>
             </Box>
-        </Box>
+
+            {/* Actions Menu */}
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            >
+                <MenuItem onClick={() => { navigate(`/item/${selectedListing?.id}`); handleMenuClose(); }}>
+                    <VisibilityIcon sx={{ mr: 1.5, fontSize: 20 }} />
+                    View
+                </MenuItem>
+                <MenuItem onClick={() => { navigate(`/edit-listing/${selectedListing?.id}`); handleMenuClose(); }}>
+                    <EditIcon sx={{ mr: 1.5, fontSize: 20 }} />
+                    Edit
+                </MenuItem>
+                <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
+                    <DeleteIcon sx={{ mr: 1.5, fontSize: 20 }} />
+                    Delete
+                </MenuItem>
+            </Menu>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+                <DialogTitle>Delete Listing</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Are you sure you want to delete "{selectedListing?.title}"? This action cannot be undone.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </PageLayout>
     );
 };
 

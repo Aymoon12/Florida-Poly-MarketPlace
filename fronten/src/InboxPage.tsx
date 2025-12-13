@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
-  Grid,
-  Paper,
-  Typography,
-  Box,
-  IconButton,
-  Drawer,
-  AppBar,
-  Toolbar,
-  Hidden,
-  Badge,
-  Divider,
-  useMediaQuery,
-  useTheme
+    Box,
+    Paper,
+    Typography,
+    IconButton,
+    Drawer,
+    Badge,
+    Divider,
+    useMediaQuery,
+    useTheme,
+    alpha,
 } from '@mui/material';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -22,172 +18,204 @@ import ConversationsList from './components/chat/ConversationsList';
 import ChatConversation from './components/chat/ChatConversation';
 import ChatService, { Conversation } from './services/ChatService';
 import { useNavigate } from 'react-router-dom';
+import { PageLayout, DashboardSidebar } from './components/layout';
+import { EmptyState } from './components/common';
 
 const InboxPage: React.FC = () => {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const userId = localStorage.getItem('userId');
-  const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
+    const [conversationsDrawerOpen, setConversationsDrawerOpen] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const userId = localStorage.getItem('userId');
+    const navigate = useNavigate();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down('lg'));
 
-  useEffect(() => {
-    if (!userId) {
-      navigate('/login');
-      return;
-    }
-    
-    fetchConversations();
-    
-    // Poll for new conversations every 30 seconds
-    const interval = setInterval(fetchConversations, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    useEffect(() => {
+        if (!userId) {
+            navigate('/login');
+            return;
+        }
 
-  const fetchConversations = async () => {
-    try {
-      if (!userId) return;
-      setLoading(true);
-      const data = await ChatService.getUserConversations(userId);
-      setConversations(data);
-      
-      // Select the first conversation by default if none is selected and there are conversations
-      if (!selectedConversationId && data.length > 0) {
-        setSelectedConversationId(data[0].id);
-      }
-    } catch (error) {
-      console.error('Error fetching conversations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+        fetchConversations();
 
-  const handleSelectConversation = (conversationId: number) => {
-    setSelectedConversationId(conversationId);
-    if (isMobile) {
-      setDrawerOpen(false);
-    }
-  };
+        // Poll for new conversations every 30 seconds
+        const interval = setInterval(fetchConversations, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
-  const handleBackToList = () => {
-    setSelectedConversationId(null);
-  };
+    const fetchConversations = async () => {
+        try {
+            if (!userId) return;
+            setLoading(true);
+            const data = await ChatService.getUserConversations(userId);
+            setConversations(data);
 
-  return (
-    <Container maxWidth="xl" sx={{ py: 4, height: 'calc(100vh - 80px)' }}>
-      <Grid container spacing={0} sx={{ height: '100%' }}>
-        {/* Mobile AppBar */}
-        <Hidden mdUp>
-          <AppBar position="static" color="default" elevation={0} sx={{ mb: 2 }}>
-            <Toolbar>
-              <IconButton edge="start" color="inherit" onClick={() => navigate(-1)} sx={{ mr: 1 }}>
-                <ArrowBackIcon />
-              </IconButton>
-              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                Messages
-              </Typography>
-              {selectedConversationId ? (
-                <IconButton color="inherit" onClick={handleBackToList}>
-                  <ArrowBackIcon />
-                </IconButton>
-              ) : (
-                <IconButton color="inherit" onClick={() => setDrawerOpen(true)}>
-                  <Badge color="primary" variant="dot" invisible={!conversations.some(c => c.unread)}>
-                    <MenuIcon />
-                  </Badge>
-                </IconButton>
-              )}
-            </Toolbar>
-          </AppBar>
-        </Hidden>
+            // Select the first conversation by default if none is selected and there are conversations
+            if (!selectedConversationId && data.length > 0) {
+                setSelectedConversationId(data[0].id);
+            }
+        } catch (error) {
+            console.error('Error fetching conversations:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        {/* Conversations List - Desktop */}
-        <Hidden mdDown>
-          <Grid item md={4} lg={3} sx={{ height: '100%' }}>
-            <Paper sx={{ height: '100%', borderRadius: 2, overflow: 'hidden' }}>
-              <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
-                  <ChatBubbleOutlineIcon sx={{ mr: 1 }} />
-                  Messages
-                </Typography>
-              </Box>
-              <Divider />
-              <Box sx={{ overflowY: 'auto', height: 'calc(100% - 57px)' }}>
-                <ConversationsList
-                  conversations={conversations}
-                  loading={loading}
-                  onSelectConversation={handleSelectConversation}
-                  selectedConversationId={selectedConversationId || undefined}
-                />
-              </Box>
-            </Paper>
-          </Grid>
-        </Hidden>
+    const handleSelectConversation = (conversationId: number) => {
+        setSelectedConversationId(conversationId);
+        if (isMobile) {
+            setConversationsDrawerOpen(false);
+        }
+    };
 
-        {/* Conversations List - Mobile Drawer */}
-        <Hidden mdUp>
-          <Drawer
-            anchor="left"
-            open={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
-            sx={{ '& .MuiDrawer-paper': { width: '80%', maxWidth: 300 } }}
-          >
-            <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
-                <ChatBubbleOutlineIcon sx={{ mr: 1 }} />
-                Messages
-              </Typography>
+    const handleBackToList = () => {
+        setSelectedConversationId(null);
+    };
+
+    return (
+        <PageLayout variant="dashboard" showCategories={false} showFooter={false}>
+            <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 64px)' }}>
+                {/* Dashboard Sidebar */}
+                <DashboardSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+                {/* Main Content */}
+                <Box sx={{
+                    flex: 1,
+                    p: { xs: 2, md: 4 },
+                    ml: { xs: 0, md: '260px' },
+                    maxWidth: { md: 'calc(100% - 260px)' },
+                }}>
+                    {/* Header */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                        <Box>
+                            <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                                Messages
+                            </Typography>
+                            <Typography variant="body1" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                                Chat with buyers and sellers
+                            </Typography>
+                        </Box>
+                        {isMobile && (
+                            <IconButton
+                                onClick={() => setConversationsDrawerOpen(true)}
+                                sx={{
+                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                    '&:hover': {
+                                        bgcolor: alpha(theme.palette.primary.main, 0.2),
+                                    },
+                                }}
+                            >
+                                <Badge color="primary" variant="dot" invisible={!conversations.some(c => c.unread)}>
+                                    <MenuIcon />
+                                </Badge>
+                            </IconButton>
+                        )}
+                    </Box>
+
+                    {/* Chat Container */}
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            borderRadius: 3,
+                            border: `1px solid ${theme.palette.divider}`,
+                            height: 'calc(100vh - 200px)',
+                            display: 'flex',
+                            overflow: 'hidden',
+                        }}
+                    >
+                        {/* Conversations List - Desktop */}
+                        {!isMobile && (
+                            <Box
+                                sx={{
+                                    width: isSmallScreen ? 280 : 320,
+                                    borderRight: `1px solid ${theme.palette.divider}`,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                }}
+                            >
+                                <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
+                                    <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', color: 'text.primary' }}>
+                                        <ChatBubbleOutlineIcon sx={{ mr: 1, color: 'primary.main' }} />
+                                        Conversations
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ overflowY: 'auto', flex: 1 }}>
+                                    <ConversationsList
+                                        conversations={conversations}
+                                        loading={loading}
+                                        onSelectConversation={handleSelectConversation}
+                                        selectedConversationId={selectedConversationId || undefined}
+                                    />
+                                </Box>
+                            </Box>
+                        )}
+
+                        {/* Conversations List - Mobile Drawer */}
+                        <Drawer
+                            anchor="left"
+                            open={conversationsDrawerOpen}
+                            onClose={() => setConversationsDrawerOpen(false)}
+                            sx={{
+                                '& .MuiDrawer-paper': {
+                                    width: '85%',
+                                    maxWidth: 360,
+                                    borderRadius: '0 16px 16px 0',
+                                }
+                            }}
+                        >
+                            <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
+                                <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', color: 'text.primary' }}>
+                                    <ChatBubbleOutlineIcon sx={{ mr: 1, color: 'primary.main' }} />
+                                    Conversations
+                                </Typography>
+                            </Box>
+                            <Box sx={{ overflowY: 'auto', flex: 1 }}>
+                                <ConversationsList
+                                    conversations={conversations}
+                                    loading={loading}
+                                    onSelectConversation={handleSelectConversation}
+                                    selectedConversationId={selectedConversationId || undefined}
+                                />
+                            </Box>
+                        </Drawer>
+
+                        {/* Chat Conversation Area */}
+                        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                            {selectedConversationId ? (
+                                <ChatConversation
+                                    conversationId={selectedConversationId}
+                                    onBack={isMobile ? handleBackToList : undefined}
+                                />
+                            ) : (
+                                <Box
+                                    sx={{
+                                        flex: 1,
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        p: 4,
+                                    }}
+                                >
+                                    <EmptyState
+                                        type="messages"
+                                        title="Your Messages"
+                                        description={conversations.length > 0
+                                            ? "Select a conversation to view messages"
+                                            : "No conversations yet. Start chatting with sellers by visiting item listings."}
+                                        actionLabel={conversations.length === 0 ? "Browse Items" : undefined}
+                                        onAction={conversations.length === 0 ? () => navigate('/home') : undefined}
+                                    />
+                                </Box>
+                            )}
+                        </Box>
+                    </Paper>
+                </Box>
             </Box>
-            <Divider />
-            <Box sx={{ overflowY: 'auto', height: 'calc(100% - 57px)' }}>
-              <ConversationsList
-                conversations={conversations}
-                loading={loading}
-                onSelectConversation={handleSelectConversation}
-                selectedConversationId={selectedConversationId || undefined}
-              />
-            </Box>
-          </Drawer>
-        </Hidden>
-
-        {/* Chat Conversation Area */}
-        <Grid item xs={12} md={8} lg={9} sx={{ height: '100%' }}>
-          {selectedConversationId ? (
-            <ChatConversation
-              conversationId={selectedConversationId}
-              onBack={isMobile ? handleBackToList : undefined}
-            />
-          ) : (
-            <Paper
-              sx={{
-                height: '100%',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                borderRadius: { xs: 0, md: 2 },
-                p: 4,
-                textAlign: 'center'
-              }}
-            >
-              <Box>
-                <ChatBubbleOutlineIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                <Typography variant="h5" gutterBottom>
-                  Your Messages
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  {conversations.length > 0
-                    ? 'Select a conversation to view messages'
-                    : 'No conversations yet. Start chatting with sellers by visiting item listings.'}
-                </Typography>
-              </Box>
-            </Paper>
-          )}
-        </Grid>
-      </Grid>
-    </Container>
-  );
+        </PageLayout>
+    );
 };
 
-export default InboxPage; 
+export default InboxPage;
