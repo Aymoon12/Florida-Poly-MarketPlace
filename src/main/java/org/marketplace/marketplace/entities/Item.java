@@ -82,4 +82,7 @@ public class Item {
 	@OneToMany( mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true )
 	private List<Conversation> conversations = new ArrayList<>();
 
+	@OneToMany( mappedBy = "reviewedItem", cascade = CascadeType.ALL, orphanRemoval = true )
+	private List<Review> reviews = new ArrayList<>();
+
 }

@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -28,7 +30,7 @@ public class ItemController {
 	private final ItemService itemService;
 
 	@PostMapping( "/createListing" )
-	public ResponseEntity<ItemResponseDto> createListing( @RequestBody final ItemRequest request ) {
+	public ResponseEntity<ItemResponseDto> createListing( @Valid @RequestBody final ItemRequest request ) {
 
 		Long itemId = itemService.addItem( request );
 

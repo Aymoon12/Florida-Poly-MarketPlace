@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -48,7 +49,7 @@ public class UserSettingsController {
      * @return The updated user settings
      */
     @PutMapping
-    public ResponseEntity<UserSettingsDto> updateUserSettings(@RequestBody UserSettingsRequest request) {
+    public ResponseEntity<UserSettingsDto> updateUserSettings(@Valid @RequestBody UserSettingsRequest request) {
         log.info("Updating settings for user: {}", request.getUserId());
         UserSettingsDto settings = userSettingsService.updateUserSettings(request);
         return ResponseEntity.ok(settings);

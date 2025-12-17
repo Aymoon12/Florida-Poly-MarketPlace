@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -40,7 +41,7 @@ public class NotificationController {
      * @return The created notification
      */
     @PostMapping
-    public ResponseEntity<NotificationDto> createNotification(@RequestBody NotificationRequest request) {
+    public ResponseEntity<NotificationDto> createNotification(@Valid @RequestBody NotificationRequest request) {
         log.info("Creating notification: {}", request);
         NotificationDto notification = notificationService.createNotification(request);
         return ResponseEntity.ok(notification);

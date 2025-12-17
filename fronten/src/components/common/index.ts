@@ -6,3 +6,7 @@ export { default as SearchBar } from './SearchBar';
 export { default as LoadingState, CardGridSkeleton, ListSkeleton, TextSkeleton } from './LoadingState';
 export { default as EmptyState } from './EmptyState';
 export { default as StatusBadge } from './StatusBadge';
+export { default as ReviewCard } from './ReviewCard';
+export { default as RatingSummary } from './RatingSummary';
+export { default as ReviewForm } from './ReviewForm';
+export { default as ReviewsList } from './ReviewsList';

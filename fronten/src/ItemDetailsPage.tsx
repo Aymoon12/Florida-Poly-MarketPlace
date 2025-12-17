@@ -16,7 +16,6 @@ import {
     ListItemIcon,
     ListItemText,
     Paper,
-    Rating,
     Stack,
     Tab,
     Tabs,
@@ -41,8 +40,9 @@ import ChatIcon from '@mui/icons-material/Chat';
 import axios from 'axios';
 import { format, formatDistance } from 'date-fns';
 import ChatService from './services/ChatService';
+import ReviewService, { RatingSummary as RatingSummaryType } from './services/ReviewService';
 import { PageLayout } from './components/layout';
-import { ItemCard, LoadingState } from './components/common';
+import { ItemCard, LoadingState, RatingSummary, ReviewsList } from './components/common';
 
 interface ItemDetails {
     id: number;
@@ -74,6 +74,7 @@ const ItemDetailsPage: React.FC = () => {
     const [similarItems, setSimilarItems] = useState<ItemDetails[]>([]);
     const [isSaved, setIsSaved] = useState(false);
     const [savedText, setSavedText] = useState('Save Listing');
+    const [sellerRating, setSellerRating] = useState<RatingSummaryType | null>(null);
 
     useEffect(() => {
         const fetchItemDetails = async () => {
@@ -94,6 +95,16 @@ const ItemDetailsPage: React.FC = () => {
                 if (response.data) {
                     setItem(response.data);
                     fetchSimilarItems(response.data.category);
+
+                    // Fetch seller rating
+                    if (response.data.seller?.id) {
+                        try {
+                            const ratingData = await ReviewService.getSellerRatingSummary(response.data.seller.id);
+                            setSellerRating(ratingData);
+                        } catch (err) {
+                            console.error('Error fetching seller rating:', err);
+                        }
+                    }
                 } else {
                     throw new Error('Item not found');
                 }
@@ -685,12 +696,13 @@ const ItemDetailsPage: React.FC = () => {
                                     <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                                         {item.seller?.username || 'Florida Poly Student'}
                                     </Typography>
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <Rating value={4.5} precision={0.5} size="small" readOnly sx={{ mr: 1 }} />
+                                    {sellerRating && sellerRating.reviewCount > 0 ? (
+                                        <RatingSummary summary={sellerRating} variant="compact" />
+                                    ) : (
                                         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                                            4.5 (10 reviews)
+                                            No reviews yet
                                         </Typography>
-                                    </Box>
+                                    )}
                                 </Box>
                             </Box>
 
@@ -784,6 +796,23 @@ const ItemDetailsPage: React.FC = () => {
                     </Grid>
                 </Box>
             )}
+
+            {/* Reviews Section */}
+            <Box sx={{ mt: 6 }}>
+                <Paper
+                    elevation={0}
+                    sx={{
+                        p: 3,
+                        borderRadius: 3,
+                        border: `1px solid ${theme.palette.divider}`
+                    }}
+                >
+                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, color: 'text.primary' }}>
+                        Item Reviews
+                    </Typography>
+                    <ReviewsList type="item" targetId={item.id} />
+                </Paper>
+            </Box>
         </PageLayout>
     );
 };

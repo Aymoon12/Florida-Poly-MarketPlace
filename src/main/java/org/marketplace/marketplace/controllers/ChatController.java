@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -46,13 +48,13 @@ public class ChatController {
 	}
 
 	@PostMapping( "/start" )
-	public ResponseEntity<ConversationDTO> startConversation( @RequestBody CreateConversationRequest request ) {
+	public ResponseEntity<ConversationDTO> startConversation( @Valid @RequestBody CreateConversationRequest request ) {
 
-		return ResponseEntity.ok( chatService.createConversation( request) );
+		return ResponseEntity.ok( chatService.createConversation( request ) );
 	}
 
 	@PostMapping( "/send" )
-	public ResponseEntity<MessageDTO> sendMessage( @RequestBody SendMessageRequest request,
+	public ResponseEntity<MessageDTO> sendMessage( @Valid @RequestBody SendMessageRequest request,
 			@RequestParam Long userId ) {
 
 		return ResponseEntity.ok( chatService.sendMessage( request, userId ) );

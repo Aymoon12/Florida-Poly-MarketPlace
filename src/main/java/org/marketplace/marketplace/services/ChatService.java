@@ -33,6 +33,7 @@ public class ChatService {
 	private final MessageRepository messageRepository;
 	private final UserRepository userRepository;
 	private final ItemRepository itemRepository;
+	private final WebSocketNotificationService webSocketNotificationService;
 
 	@Transactional( readOnly = true )
 	public List<ConversationDTO> getUserConversations( Long userId ) {
@@ -132,6 +133,10 @@ public class ChatService {
 			// Update conversation with last message
 			conversation.setLastMessageText( message.getContent() );
 			conversationRepository.save( conversation );
+
+			// Notify seller via WebSocket about new conversation/message
+			MessageDTO messageDTO = mapToMessageDTO( message );
+			webSocketNotificationService.notifyNewMessage( messageDTO, conversation.getId() );
 		}
 
 		return mapToConversationDTO( conversation, buyerId );
@@ -177,7 +182,12 @@ public class ChatService {
 
 		conversationRepository.save( conversation );
 
-		return mapToMessageDTO( message );
+		MessageDTO messageDTO = mapToMessageDTO( message );
+
+		// Notify recipient via WebSocket
+		webSocketNotificationService.notifyNewMessage( messageDTO, conversation.getId() );
+
+		return messageDTO;
 	}
 
 	@Transactional

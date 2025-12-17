@@ -29,10 +29,14 @@ public class SecurityConfiguration {
 
 		return http.cors( corsConfig -> {
 		} ).csrf( AbstractHttpConfigurer::disable ).authorizeHttpRequests( req -> {
-			req.requestMatchers( "/api/v1/auth/**" ).permitAll().requestMatchers( "/api/v1/s3/**" ).permitAll()
-					.requestMatchers( "/admin_only/**" ).hasAuthority( "ADMIN" ).requestMatchers( "/login/**" )
-					.permitAll().requestMatchers( "/api/v1/dev/**" ).permitAll() // Dev endpoints (only active with 'dev' profile)
-					.requestMatchers( "/api/v1/oauth/**" ).permitAll().anyRequest().authenticated();
+			req.requestMatchers( "/api/v1/auth/**" ).permitAll()
+					.requestMatchers( "/api/v1/s3/**" ).permitAll()
+					.requestMatchers( "/ws/**" ).permitAll() // WebSocket endpoint
+					.requestMatchers( "/admin_only/**" ).hasAuthority( "ADMIN" )
+					.requestMatchers( "/login/**" ).permitAll()
+					.requestMatchers( "/api/v1/dev/**" ).permitAll() // Dev endpoints (only active with 'dev' profile)
+					.requestMatchers( "/api/v1/oauth/**" ).permitAll()
+					.anyRequest().authenticated();
 
 		} ).oauth2Login( oauth2 -> {
 			oauth2.successHandler( customOAuth2SuccessHandler ).failureUrl( "/login?error=true" );

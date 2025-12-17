@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -17,6 +17,7 @@ import ChatMessage from './ChatMessage';
 import MessageInput from './MessageInput';
 import { Conversation, Message, SendMessageRequest } from '../../services/ChatService';
 import ChatService from '../../services/ChatService';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 interface ChatConversationProps {
   conversationId: number;
@@ -31,25 +32,26 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ conversationId, onB
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const userId = localStorage.getItem('userId');
 
-  useEffect(() => {
-    fetchConversation();
-    fetchMessages();
-
-    // Mark conversation as read when opened
-    if (userId) {
-      ChatService.markAsRead(conversationId, userId);
+  // Handle incoming WebSocket messages
+  const handleIncomingMessage = useCallback((message: Message) => {
+    // Only add messages that belong to this conversation
+    if (message.conversationId === conversationId) {
+      setMessages(prev => {
+        // Check if message already exists to avoid duplicates
+        const exists = prev.some(m => m.id === message.id);
+        if (exists) return prev;
+        return [...prev, message];
+      });
     }
-
-    // Poll for new messages every 10 seconds
-    const interval = setInterval(fetchMessages, 10000);
-    return () => clearInterval(interval);
   }, [conversationId]);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  // Initialize WebSocket
+  const { isConnected, markAsRead: wsMarkAsRead } = useWebSocket({
+    onMessage: handleIncomingMessage,
+    autoConnect: true,
+  });
 
-  const fetchConversation = async () => {
+  const fetchConversation = useCallback(async () => {
     try {
       if (!userId) return;
       const data = await ChatService.getConversation(conversationId, userId);
@@ -57,9 +59,9 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ conversationId, onB
     } catch (error) {
       console.error('Error fetching conversation:', error);
     }
-  };
+  }, [conversationId, userId]);
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     try {
       if (!userId) return;
       setLoading(true);
@@ -70,14 +72,45 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ conversationId, onB
     } finally {
       setLoading(false);
     }
-  };
+  }, [conversationId, userId]);
+
+  useEffect(() => {
+    fetchConversation();
+    fetchMessages();
+
+    // Mark conversation as read when opened (using both REST and WebSocket)
+    if (userId) {
+      ChatService.markAsRead(conversationId, userId);
+      if (isConnected) {
+        wsMarkAsRead(conversationId);
+      }
+    }
+
+    // Fallback polling only when WebSocket is disconnected (every 30 seconds)
+    const interval = setInterval(() => {
+      if (!isConnected) {
+        fetchMessages();
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [conversationId, userId, isConnected, fetchConversation, fetchMessages, wsMarkAsRead]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSendMessage = async (messageRequest: SendMessageRequest) => {
     try {
       if (!userId) return;
       setSending(true);
+      // Use REST API for sending - provides better error handling and response
       const newMessage = await ChatService.sendMessage(messageRequest, userId);
-      setMessages([...messages, newMessage]);
+      setMessages(prev => {
+        // Check if message already exists (might have come via WebSocket)
+        const exists = prev.some(m => m.id === newMessage.id);
+        if (exists) return prev;
+        return [...prev, newMessage];
+      });
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
