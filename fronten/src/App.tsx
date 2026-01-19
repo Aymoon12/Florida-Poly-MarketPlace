@@ -14,6 +14,7 @@ import NotificationsPage from "./NotificationsPage";
 import SettingsPage from "./SettingsPage";
 import InboxPage from './InboxPage';
 import SavedItemsPage from './SavedItemsPage';
+import UserProfilePage from './UserProfilePage';
 
 function App() {
     return (
@@ -34,6 +35,7 @@ function App() {
                     <Route path="/settings" element={<SettingsPage/>}/>
                     <Route path="/inbox" element={<InboxPage />} />
                     <Route path="/saved" element={<SavedItemsPage />} />
+                    <Route path="/user/:userId" element={<UserProfilePage />} />
                 </Routes>
             </Router>
         </NotificationProvider>

@@ -115,4 +115,25 @@ public class ReviewController {
 		return ResponseEntity.ok( success );
 	}
 
+	@GetMapping( "/buyer/{buyerId}" )
+	public ResponseEntity<List<ReviewDto>> getBuyerReviews(
+			@PathVariable Long buyerId,
+			@RequestParam( defaultValue = "0" ) int page,
+			@RequestParam( defaultValue = "10" ) int size ) {
+
+		log.info( "Fetching reviews for buyer: {}", buyerId );
+		List<ReviewDto> reviews = reviewService.getBuyerReviews( buyerId, page, size );
+
+		return ResponseEntity.ok( reviews );
+	}
+
+	@GetMapping( "/buyer/{buyerId}/summary" )
+	public ResponseEntity<RatingSummaryDto> getBuyerRatingSummary( @PathVariable Long buyerId ) {
+
+		log.info( "Fetching rating summary for buyer: {}", buyerId );
+		RatingSummaryDto summary = reviewService.getBuyerRatingSummary( buyerId );
+
+		return ResponseEntity.ok( summary );
+	}
+
 }

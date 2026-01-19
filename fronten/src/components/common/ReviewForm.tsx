@@ -13,7 +13,7 @@ import ReviewService, { CreateReviewRequest } from '../../services/ReviewService
 
 interface ReviewFormProps {
   saleId: number;
-  reviewType: 'SELLER' | 'ITEM';
+  reviewType: 'SELLER' | 'ITEM' | 'BUYER';
   targetName: string;
   onSuccess: () => void;
   onCancel?: () => void;
@@ -77,7 +77,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-        Rate your experience with {reviewType === 'SELLER' ? 'seller' : 'item'}: {targetName}
+        Rate your experience with {reviewType === 'SELLER' ? 'seller' : reviewType === 'ITEM' ? 'item' : 'buyer'}: {targetName}
       </Typography>
 
       {error && (

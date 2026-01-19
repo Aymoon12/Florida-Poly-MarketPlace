@@ -84,6 +84,9 @@ public class User implements UserDetails {
 	@OneToMany( mappedBy = "reviewedSeller", cascade = CascadeType.ALL, orphanRemoval = true )
 	private List<Review> reviewsReceived = new ArrayList<>();
 
+	@OneToMany( mappedBy = "reviewedBuyer", cascade = CascadeType.ALL, orphanRemoval = true )
+	private List<Review> buyerReviewsReceived = new ArrayList<>();
+
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 

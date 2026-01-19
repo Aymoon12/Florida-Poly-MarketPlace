@@ -5,7 +5,7 @@ export interface Review {
   saleId: number;
   reviewerId: number;
   reviewerName: string;
-  reviewType: 'SELLER' | 'ITEM';
+  reviewType: 'SELLER' | 'ITEM' | 'BUYER';
   rating: number;
   comment?: string;
   createdAt: string;
@@ -14,11 +14,13 @@ export interface Review {
   reviewedSellerName?: string;
   reviewedItemId?: number;
   reviewedItemTitle?: string;
+  reviewedBuyerId?: number;
+  reviewedBuyerName?: string;
 }
 
 export interface CreateReviewRequest {
   saleId: number;
-  reviewType: 'SELLER' | 'ITEM';
+  reviewType: 'SELLER' | 'ITEM' | 'BUYER';
   rating: number;
   comment?: string;
 }
@@ -41,7 +43,7 @@ const ReviewService = {
     return response.data;
   },
 
-  canReview: async (userId: string, saleId: number, reviewType: 'SELLER' | 'ITEM'): Promise<boolean> => {
+  canReview: async (userId: string, saleId: number, reviewType: 'SELLER' | 'ITEM' | 'BUYER'): Promise<boolean> => {
     const response = await axios.get(`${BASE_URL}/can-review`, {
       params: { userId, saleId, reviewType },
       headers: {
@@ -101,6 +103,25 @@ const ReviewService = {
   deleteReview: async (reviewId: number, userId: string): Promise<boolean> => {
     const response = await axios.delete(`${BASE_URL}/${reviewId}`, {
       params: { userId },
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
+  },
+
+  getBuyerReviews: async (buyerId: number, page: number = 0, size: number = 10): Promise<Review[]> => {
+    const response = await axios.get(`${BASE_URL}/buyer/${buyerId}`, {
+      params: { page, size },
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
+  },
+
+  getBuyerRatingSummary: async (buyerId: number): Promise<RatingSummary> => {
+    const response = await axios.get(`${BASE_URL}/buyer/${buyerId}/summary`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`
       }

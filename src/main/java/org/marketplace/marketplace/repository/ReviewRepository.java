@@ -45,4 +45,16 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 	@Query( "SELECT r FROM Review r WHERE r.reviewer.ID = :reviewerId ORDER BY r.createdAt DESC" )
 	List<Review> findByReviewerId( @Param( "reviewerId" ) Long reviewerId );
 
+	@Query( "SELECT r FROM Review r WHERE r.reviewedBuyer.ID = :buyerId ORDER BY r.createdAt DESC" )
+	List<Review> findByReviewedBuyerId( @Param( "buyerId" ) Long buyerId );
+
+	@Query( "SELECT r FROM Review r WHERE r.reviewedBuyer.ID = :buyerId ORDER BY r.createdAt DESC" )
+	List<Review> findByReviewedBuyerId( @Param( "buyerId" ) Long buyerId, Pageable pageable );
+
+	@Query( "SELECT AVG(r.rating) FROM Review r WHERE r.reviewedBuyer.ID = :buyerId" )
+	Double calculateAverageBuyerRating( @Param( "buyerId" ) Long buyerId );
+
+	@Query( "SELECT COUNT(r) FROM Review r WHERE r.reviewedBuyer.ID = :buyerId" )
+	Long countBuyerReviews( @Param( "buyerId" ) Long buyerId );
+
 }

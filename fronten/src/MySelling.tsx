@@ -39,9 +39,10 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
+import SellIcon from "@mui/icons-material/Sell";
 import axios from "axios";
 import { PageLayout, DashboardSidebar } from './components/layout';
-import { LoadingState, EmptyState, StatusBadge } from './components/common';
+import { LoadingState, EmptyState, StatusBadge, MarkAsSoldDialog } from './components/common';
 
 interface Listing {
     id: number;
@@ -80,6 +81,7 @@ const MySelling = () => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [markAsSoldDialogOpen, setMarkAsSoldDialogOpen] = useState(false);
     const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     useEffect(() => {
@@ -139,6 +141,24 @@ const MySelling = () => {
     const handleDeleteClick = () => {
         setDeleteDialogOpen(true);
         handleMenuClose();
+    };
+
+    const handleMarkAsSoldClick = () => {
+        setMarkAsSoldDialogOpen(true);
+        handleMenuClose();
+    };
+
+    const handleMarkAsSoldSuccess = () => {
+        if (selectedListing) {
+            setListings(listings.map(listing =>
+                listing.id === selectedListing.id
+                    ? { ...listing, status: 'SOLD' }
+                    : listing
+            ));
+        }
+        setNotification({ message: 'Item marked as sold! You can now leave a review for the buyer.', type: 'success' });
+        setMarkAsSoldDialogOpen(false);
+        setSelectedListing(null);
     };
 
     const handleDeleteConfirm = async () => {
@@ -524,6 +544,12 @@ const MySelling = () => {
                     <EditIcon sx={{ mr: 1.5, fontSize: 20 }} />
                     Edit
                 </MenuItem>
+                {selectedListing?.status.toLowerCase() === 'active' && (
+                    <MenuItem onClick={handleMarkAsSoldClick}>
+                        <SellIcon sx={{ mr: 1.5, fontSize: 20, color: 'success.main' }} />
+                        Mark as Sold
+                    </MenuItem>
+                )}
                 <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
                     <DeleteIcon sx={{ mr: 1.5, fontSize: 20 }} />
                     Delete
@@ -545,6 +571,21 @@ const MySelling = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* Mark as Sold Dialog */}
+            {selectedListing && (
+                <MarkAsSoldDialog
+                    open={markAsSoldDialogOpen}
+                    onClose={() => {
+                        setMarkAsSoldDialogOpen(false);
+                        setSelectedListing(null);
+                    }}
+                    onSuccess={handleMarkAsSoldSuccess}
+                    itemId={selectedListing.id}
+                    itemTitle={selectedListing.title}
+                    itemPrice={selectedListing.price}
+                />
+            )}
         </PageLayout>
     );
 };

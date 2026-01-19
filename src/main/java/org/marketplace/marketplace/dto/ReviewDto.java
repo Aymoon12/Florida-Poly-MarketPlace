@@ -29,6 +29,9 @@ public class ReviewDto {
 	private Long reviewedItemId;
 	private String reviewedItemTitle;
 
+	private Long reviewedBuyerId;
+	private String reviewedBuyerName;
+
 	public static ReviewDto from( Review review ) {
 
 		ReviewDtoBuilder builder = ReviewDto.builder()
@@ -50,6 +53,11 @@ public class ReviewDto {
 		if ( review.getReviewedItem() != null ) {
 			builder.reviewedItemId( review.getReviewedItem().getId() )
 					.reviewedItemTitle( review.getReviewedItem().getTitle() );
+		}
+
+		if ( review.getReviewedBuyer() != null ) {
+			builder.reviewedBuyerId( review.getReviewedBuyer().getID() )
+					.reviewedBuyerName( review.getReviewedBuyer().getName() );
 		}
 
 		return builder.build();

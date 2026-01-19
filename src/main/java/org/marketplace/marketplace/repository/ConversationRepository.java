@@ -25,4 +25,7 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
     
     @Query("SELECT COUNT(c) FROM Conversation c WHERE (c.buyer.ID = ?1 AND c.isReadByBuyer = false) OR (c.seller.ID = ?1 AND c.isReadBySeller = false)")
     Long countUnreadByUserId(Long userId);
+
+    @Query("SELECT c FROM Conversation c WHERE c.item.id = ?1 ORDER BY c.updatedAt DESC")
+    List<Conversation> findAllByItemId(Long itemId);
 } 

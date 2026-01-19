@@ -25,4 +25,10 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
 	@Query( "SELECT s FROM Sale s WHERE s.buyer.ID = :buyerId ORDER BY s.salesDate DESC" )
 	List<Sale> findByBuyerId( @Param( "buyerId" ) Long buyerId );
 
+	@Query( "SELECT s FROM Sale s WHERE s.seller.ID = :sellerId ORDER BY s.salesDate DESC" )
+	List<Sale> findBySellerId( @Param( "sellerId" ) Long sellerId );
+
+	@Query( "SELECT s FROM Sale s WHERE s.item.id = :itemId" )
+	Optional<Sale> findByItemId( @Param( "itemId" ) Long itemId );
+
 }

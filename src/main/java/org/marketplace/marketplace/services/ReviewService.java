@@ -37,21 +37,31 @@ public class ReviewService {
 				.orElseThrow( () -> new ResponseStatusException( HttpStatus.NOT_FOUND,
 						"Sale not found with ID: " + request.getSaleId() ) );
 
-		if ( !sale.getBuyer().getID().equals( reviewerId ) ) {
-			throw new ResponseStatusException( HttpStatus.FORBIDDEN,
-					"Only the buyer can leave a review for this purchase" );
+		// Validate reviewer based on review type
+		if ( request.getReviewType() == ReviewType.BUYER ) {
+			// Only seller can review buyer
+			if ( !sale.getSeller().getID().equals( reviewerId ) ) {
+				throw new ResponseStatusException( HttpStatus.FORBIDDEN,
+						"Only the seller can leave a review for the buyer" );
+			}
+		} else {
+			// Only buyer can review seller or item
+			if ( !sale.getBuyer().getID().equals( reviewerId ) ) {
+				throw new ResponseStatusException( HttpStatus.FORBIDDEN,
+						"Only the buyer can leave a review for this purchase" );
+			}
 		}
 
 		if ( reviewRepository.findBySaleIdAndReviewType( request.getSaleId(), request.getReviewType() ).isPresent() ) {
+			String target = request.getReviewType() == ReviewType.SELLER ? "seller"
+					: request.getReviewType() == ReviewType.ITEM ? "item" : "buyer";
 			throw new ResponseStatusException( HttpStatus.CONFLICT,
-					"You have already reviewed this "
-							+ ( request.getReviewType() == ReviewType.SELLER ? "seller" : "item" )
-							+ " for this purchase" );
+					"You have already reviewed this " + target + " for this purchase" );
 		}
 
 		Review.ReviewBuilder reviewBuilder = Review.builder()
 				.sale( sale )
-				.reviewer( sale.getBuyer() )
+				.reviewer( request.getReviewType() == ReviewType.BUYER ? sale.getSeller() : sale.getBuyer() )
 				.reviewType( request.getReviewType() )
 				.rating( request.getRating() )
 				.comment( request.getComment() )
@@ -59,8 +69,10 @@ public class ReviewService {
 
 		if ( request.getReviewType() == ReviewType.SELLER ) {
 			reviewBuilder.reviewedSeller( sale.getSeller() );
-		} else {
+		} else if ( request.getReviewType() == ReviewType.ITEM ) {
 			reviewBuilder.reviewedItem( sale.getItem() );
+		} else if ( request.getReviewType() == ReviewType.BUYER ) {
+			reviewBuilder.reviewedBuyer( sale.getBuyer() );
 		}
 
 		Review savedReview = reviewRepository.save( reviewBuilder.build() );
@@ -72,9 +84,21 @@ public class ReviewService {
 	public boolean canReview( Long userId, Long saleId, ReviewType reviewType ) {
 
 		Sale sale = saleRepository.findById( saleId ).orElse( null );
-
-		if ( sale == null || !sale.getBuyer().getID().equals( userId ) ) {
+		if ( sale == null ) {
 			return false;
+		}
+
+		// Check if user is allowed to review based on type
+		if ( reviewType == ReviewType.BUYER ) {
+			// Only seller can review buyer
+			if ( !sale.getSeller().getID().equals( userId ) ) {
+				return false;
+			}
+		} else {
+			// Only buyer can review seller or item
+			if ( !sale.getBuyer().getID().equals( userId ) ) {
+				return false;
+			}
 		}
 
 		return reviewRepository.findBySaleIdAndReviewType( saleId, reviewType ).isEmpty();
@@ -157,6 +181,33 @@ public class ReviewService {
 		log.info( "Review deleted: {} by user {}", reviewId, userId );
 
 		return true;
+	}
+
+	@Transactional( readOnly = true )
+	public List<ReviewDto> getBuyerReviews( Long buyerId, int page, int size ) {
+
+		Pageable pageable = PageRequest.of( page, size );
+
+		return reviewRepository.findByReviewedBuyerId( buyerId, pageable )
+				.stream()
+				.map( ReviewDto::from )
+				.collect( Collectors.toList() );
+	}
+
+	@Transactional( readOnly = true )
+	public RatingSummaryDto getBuyerRatingSummary( Long buyerId ) {
+
+		Double avgRating = reviewRepository.calculateAverageBuyerRating( buyerId );
+		Long count = reviewRepository.countBuyerReviews( buyerId );
+
+		if ( avgRating == null || count == 0 ) {
+			return RatingSummaryDto.empty();
+		}
+
+		return RatingSummaryDto.builder()
+				.averageRating( Math.round( avgRating * 10.0 ) / 10.0 )
+				.reviewCount( count )
+				.build();
 	}
 
 }

@@ -47,6 +47,10 @@ public class Review {
 	@JoinColumn( name = "reviewed_item_id" )
 	private Item reviewedItem;
 
+	@ManyToOne( fetch = FetchType.LAZY )
+	@JoinColumn( name = "reviewed_buyer_id" )
+	private User reviewedBuyer;
+
 	@Column( name = "review_type", nullable = false )
 	@Enumerated( EnumType.STRING )
 	private ReviewType reviewType;
