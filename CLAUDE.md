@@ -85,14 +85,14 @@ npm run lint         # ESLint
 
 ### Backend
 ```bash
-./mvnw spring-boot:run    # Start Spring Boot (default: localhost:8080)
+./mvnw spring-boot:run    # Start Spring Boot (default: localhost:9090)
 ./mvnw clean install      # Build with Maven
 ```
 
 ### Port Configuration
 | Service  | Port |
 |----------|------|
-| Spring Boot | 8080 |
+| Spring Boot | 9090 |
 | Vite Dev | 5173 |
 
 **Note**: No Vite proxy configured in `vite.config.ts`. Frontend makes direct API calls (CORS enabled via `@CrossOrigin` on controllers).

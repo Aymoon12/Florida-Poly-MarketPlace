@@ -171,7 +171,7 @@ public class DevController {
 
 	/**
 	 * Quick login that creates a test user (if needed) and redirects to frontend with JWT cookie set.
-	 * Usage: Navigate to http://localhost:8080/api/v1/dev/quick-login?name=TestUser in browser
+	 * Usage: Navigate to http://localhost:9090/api/v1/dev/quick-login?name=TestUser in browser
 	 *
 	 * @param name
 	 *            The name for the test user
