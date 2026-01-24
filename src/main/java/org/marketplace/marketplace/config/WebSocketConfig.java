@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
 	private final WebSocketAuthChannelInterceptor authChannelInterceptor;
+	private final WebSocketHandshakeInterceptor handshakeInterceptor;
 
 	@Override
 	public void configureMessageBroker( MessageBrokerRegistry config ) {
@@ -36,9 +37,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 	@Override
 	public void registerStompEndpoints( StompEndpointRegistry registry ) {
 
-		// WebSocket endpoint with SockJS fallback
+		// WebSocket endpoint with SockJS fallback and handshake interceptor for cookie auth
 		registry.addEndpoint( "/ws" )
 				.setAllowedOrigins( "http://localhost:5173", "http://localhost:3000" )
+				.addInterceptors( handshakeInterceptor )
 				.withSockJS();
 	}
 

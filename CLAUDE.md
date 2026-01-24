@@ -62,14 +62,15 @@ University marketplace for Florida Polytechnic students to buy/sell items. Full-
 
 ### API Patterns
 - **REST Base Path**: `api/v1/{resource}` (e.g., `api/v1/item`, `api/v1/cart`)
+- **Auth Endpoints**: `api/v1/auth/*` (`GET /me` for current user, `POST /logout`)
 - **WebSocket Endpoint**: `/ws` with STOMP
 - **Controller Injection**: Constructor injection via `@RequiredArgsConstructor`
 - **Validation**: Jakarta Bean Validation (`@Valid`)
 
 ### Frontend Patterns
-- **Axios**: Direct axios calls in page components (no centralized API layer)
+- **Axios**: Centralized API service (`services/api.ts`) with `withCredentials: true` for cookie-based auth
 - **State**: React Context for notifications; local state for most pages
-- **Services**: `WebSocketService.ts`, `ChatService.ts`, `ReviewService.ts`, `SaleService.ts`
+- **Services**: `api.ts` (main API client), `WebSocketService.ts`, `ChatService.ts`, `ReviewService.ts`, `SaleService.ts`
 
 ## Development Workflow
 
@@ -96,9 +97,19 @@ npm run lint         # ESLint
 
 **Note**: No Vite proxy configured in `vite.config.ts`. Frontend makes direct API calls (CORS enabled via `@CrossOrigin` on controllers).
 
+## Authentication
+
+- **OAuth2 Flow**: Azure AD login → JWT generated → stored as HTTP-only cookie
+- **Cookie-based Auth**: JWT stored in secure HTTP-only cookie (not exposed to JavaScript)
+- **CORS**: Configured with `allowCredentials: true` for cookie transmission
+- **Frontend**: Uses `withCredentials: true` on all API requests
+- **User Info**: Frontend fetches user data from `GET /api/v1/auth/me` after login
+- **Logout**: `POST /api/v1/auth/logout` clears the JWT cookie
+
 ## Active Features
 
-- [x] OAuth2 login (Azure AD) with JWT session
+- [x] OAuth2 login (Azure AD) with secure HTTP-only cookie JWT
+- [x] Logout functionality (clears JWT cookie and localStorage)
 - [x] Item listings (create, search, browse by category)
 - [x] Shopping cart
 - [x] Real-time chat (WebSocket/STOMP)

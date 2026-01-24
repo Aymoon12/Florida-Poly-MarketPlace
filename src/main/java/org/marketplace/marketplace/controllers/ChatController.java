@@ -2,6 +2,7 @@ package org.marketplace.marketplace.controllers;
 
 import java.util.List;
 
+import org.marketplace.marketplace.auth.config.AuthenticationUtil;
 import org.marketplace.marketplace.dto.ConversationDTO;
 import org.marketplace.marketplace.dto.CreateConversationRequest;
 import org.marketplace.marketplace.dto.MessageDTO;
@@ -13,7 +14,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
@@ -28,22 +28,23 @@ public class ChatController {
 	private final ChatService chatService;
 
 	@GetMapping( "/conversations" )
-	public ResponseEntity<List<ConversationDTO>> getUserConversations( @RequestParam Long userId ) {
+	public ResponseEntity<List<ConversationDTO>> getUserConversations() {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		return ResponseEntity.ok( chatService.getUserConversations( userId ) );
 	}
 
 	@GetMapping( "/conversation/{conversationId}" )
-	public ResponseEntity<ConversationDTO> getConversation( @PathVariable Long conversationId,
-			@RequestParam Long userId ) {
+	public ResponseEntity<ConversationDTO> getConversation( @PathVariable Long conversationId ) {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		return ResponseEntity.ok( chatService.getConversation( conversationId, userId ) );
 	}
 
 	@GetMapping( "/messages/{conversationId}" )
-	public ResponseEntity<List<MessageDTO>> getConversationMessages( @PathVariable Long conversationId,
-			@RequestParam Long userId ) {
+	public ResponseEntity<List<MessageDTO>> getConversationMessages( @PathVariable Long conversationId ) {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		return ResponseEntity.ok( chatService.getConversationMessages( conversationId, userId ) );
 	}
 
@@ -54,22 +55,24 @@ public class ChatController {
 	}
 
 	@PostMapping( "/send" )
-	public ResponseEntity<MessageDTO> sendMessage( @Valid @RequestBody SendMessageRequest request,
-			@RequestParam Long userId ) {
+	public ResponseEntity<MessageDTO> sendMessage( @Valid @RequestBody SendMessageRequest request ) {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		return ResponseEntity.ok( chatService.sendMessage( request, userId ) );
 	}
 
 	@PostMapping( "/mark-read/{conversationId}" )
-	public ResponseEntity<Void> markConversationAsRead( @PathVariable Long conversationId, @RequestParam Long userId ) {
+	public ResponseEntity<Void> markConversationAsRead( @PathVariable Long conversationId ) {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		chatService.markConversationAsRead( conversationId, userId );
 		return ResponseEntity.ok().build();
 	}
 
 	@GetMapping( "/unread-count" )
-	public ResponseEntity<Long> getUnreadCount( @RequestParam Long userId ) {
+	public ResponseEntity<Long> getUnreadCount() {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		return ResponseEntity.ok( chatService.getUnreadCount( userId ) );
 	}
 }

@@ -2,6 +2,7 @@ package org.marketplace.marketplace.controllers;
 
 import java.util.List;
 
+import org.marketplace.marketplace.auth.config.AuthenticationUtil;
 import org.marketplace.marketplace.dto.BuyerInfoDto;
 import org.marketplace.marketplace.dto.MarkAsSoldRequest;
 import org.marketplace.marketplace.dto.SaleDto;
@@ -35,10 +36,9 @@ public class SaleController {
 	}
 
 	@PostMapping( "/mark-as-sold" )
-	public ResponseEntity<SaleDto> markAsSold(
-			@RequestParam Long sellerId,
-			@Valid @RequestBody MarkAsSoldRequest request ) {
+	public ResponseEntity<SaleDto> markAsSold( @Valid @RequestBody MarkAsSoldRequest request ) {
 
+		Long sellerId = AuthenticationUtil.getCurrentUserId();
 		log.info( "Marking item {} as sold by seller {}", request.getItemId(), sellerId );
 		SaleDto sale = saleService.markAsSold( sellerId, request );
 
@@ -46,10 +46,9 @@ public class SaleController {
 	}
 
 	@GetMapping( "/potential-buyers" )
-	public ResponseEntity<List<BuyerInfoDto>> getPotentialBuyers(
-			@RequestParam Long sellerId,
-			@RequestParam Long itemId ) {
+	public ResponseEntity<List<BuyerInfoDto>> getPotentialBuyers( @RequestParam Long itemId ) {
 
+		Long sellerId = AuthenticationUtil.getCurrentUserId();
 		log.info( "Fetching potential buyers for item {} by seller {}", itemId, sellerId );
 		List<BuyerInfoDto> buyers = saleService.getPotentialBuyers( sellerId, itemId );
 
@@ -57,8 +56,9 @@ public class SaleController {
 	}
 
 	@GetMapping( "/user-sales" )
-	public ResponseEntity<List<SaleDto>> getUserSales( @RequestParam Long userId ) {
+	public ResponseEntity<List<SaleDto>> getUserSales() {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		log.info( "Fetching sales for user {}", userId );
 		List<SaleDto> sales = saleService.getUserSales( userId );
 
@@ -66,8 +66,9 @@ public class SaleController {
 	}
 
 	@GetMapping( "/pending-reviews" )
-	public ResponseEntity<List<SaleDto>> getPendingReviews( @RequestParam Long userId ) {
+	public ResponseEntity<List<SaleDto>> getPendingReviews() {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		log.info( "Fetching pending reviews for user {}", userId );
 		List<SaleDto> pendingReviews = saleService.getPendingReviews( userId );
 

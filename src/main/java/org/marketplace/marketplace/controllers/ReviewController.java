@@ -2,6 +2,7 @@ package org.marketplace.marketplace.controllers;
 
 import java.util.List;
 
+import org.marketplace.marketplace.auth.config.AuthenticationUtil;
 import org.marketplace.marketplace.dto.CreateReviewRequest;
 import org.marketplace.marketplace.dto.RatingSummaryDto;
 import org.marketplace.marketplace.dto.ReviewDto;
@@ -32,10 +33,9 @@ public class ReviewController {
 	private final ReviewService reviewService;
 
 	@PostMapping
-	public ResponseEntity<ReviewDto> createReview(
-			@RequestParam Long userId,
-			@Valid @RequestBody CreateReviewRequest request ) {
+	public ResponseEntity<ReviewDto> createReview( @Valid @RequestBody CreateReviewRequest request ) {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		log.info( "Creating review for user: {}, sale: {}", userId, request.getSaleId() );
 		ReviewDto review = reviewService.createReview( userId, request );
 
@@ -44,10 +44,10 @@ public class ReviewController {
 
 	@GetMapping( "/can-review" )
 	public ResponseEntity<Boolean> canReview(
-			@RequestParam Long userId,
 			@RequestParam Long saleId,
 			@RequestParam ReviewType reviewType ) {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		boolean canReview = reviewService.canReview( userId, saleId, reviewType );
 
 		return ResponseEntity.ok( canReview );
@@ -105,10 +105,9 @@ public class ReviewController {
 	}
 
 	@DeleteMapping( "/{reviewId}" )
-	public ResponseEntity<Boolean> deleteReview(
-			@PathVariable Long reviewId,
-			@RequestParam Long userId ) {
+	public ResponseEntity<Boolean> deleteReview( @PathVariable Long reviewId ) {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		log.info( "Deleting review: {} by user: {}", reviewId, userId );
 		boolean success = reviewService.deleteReview( reviewId, userId );
 

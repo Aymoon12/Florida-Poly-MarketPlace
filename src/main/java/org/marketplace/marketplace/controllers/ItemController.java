@@ -2,6 +2,7 @@ package org.marketplace.marketplace.controllers;
 
 import java.util.List;
 
+import org.marketplace.marketplace.auth.config.AuthenticationUtil;
 import org.marketplace.marketplace.dto.ItemDto;
 import org.marketplace.marketplace.dto.ItemResponseDto;
 import org.marketplace.marketplace.requests.ItemRequest;
@@ -48,10 +49,10 @@ public class ItemController {
 	}
 
 	@GetMapping( "/getAllActiveListings" )
-	public ResponseEntity<?> getAllActiveListings( @RequestParam final Long userId ) {
+	public ResponseEntity<?> getAllActiveListings() {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		return ResponseEntity.ok( itemService.getAllActiveListings( userId ) );
-
 	}
 
 	@GetMapping( "/search" )
@@ -62,9 +63,10 @@ public class ItemController {
 		return ResponseEntity.ok( itemService.search( query, page, size ) );
 	}
 
-	@GetMapping( "/{itemId}/{userId}" )
-	public ResponseEntity<?> getItemById( @PathVariable final Long itemId, @PathVariable final Long userId ) {
+	@GetMapping( "/{itemId}" )
+	public ResponseEntity<?> getItemById( @PathVariable final Long itemId ) {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		ItemDto item = itemService.getItemById( userId, itemId );
 
 		if ( item != null ) {
@@ -86,8 +88,9 @@ public class ItemController {
 	}
 
 	@GetMapping( "/getHistory" )
-	public ResponseEntity<?> getHistory( @RequestParam final Long userId ) {
+	public ResponseEntity<?> getHistory() {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		List<ItemDto> items = itemService.getHistory( userId );
 		if ( !items.isEmpty() ) {
 			return ResponseEntity.ok( items );
@@ -97,8 +100,9 @@ public class ItemController {
 	}
 
 	@GetMapping( "/getRecentlyViewed" )
-	public ResponseEntity<?> getRecentlyViewedByUserId( @RequestParam final Long userId ) {
+	public ResponseEntity<?> getRecentlyViewedByUserId() {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		List<ItemDto> items = itemService.getRecentlyViewedItems( userId );
 		if ( !items.isEmpty() ) {
 			return ResponseEntity.ok( items );
