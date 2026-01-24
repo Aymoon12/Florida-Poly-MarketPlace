@@ -7,6 +7,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -19,7 +20,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table
+@Table( name = "view_history", indexes = {
+		@Index( name = "idx_viewhistory_user_item", columnList = "user_id, item_id" ),
+		@Index( name = "idx_viewhistory_user_id", columnList = "user_id" ),
+		@Index( name = "idx_viewhistory_viewed_at", columnList = "viewedAt" )
+} )
 @Builder
 public class ViewHistory {
 

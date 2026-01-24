@@ -1,10 +1,13 @@
 package org.marketplace.marketplace.services;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -44,6 +47,119 @@ public class S3Service {
 	@Value( "${aws.s3.presigned-url.expiry:900000}" )
 	private long presignedUrlExpiry; // Default 15 minutes in milliseconds
 
+	// Allowed content types for image uploads
+	private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
+			"image/jpeg",
+			"image/png",
+			"image/webp",
+			"image/gif"
+	);
+
+	// Maximum file size: 10MB
+	private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+	// Magic number signatures for image file types
+	private static final byte[] JPEG_MAGIC = new byte[] { (byte) 0xFF, (byte) 0xD8, (byte) 0xFF };
+	private static final byte[] PNG_MAGIC = new byte[] { (byte) 0x89, 0x50, 0x4E, 0x47 };
+	private static final byte[] GIF_MAGIC = "GIF".getBytes();
+	private static final byte[] WEBP_MAGIC = "RIFF".getBytes();
+
+	/**
+	 * Validate content type against whitelist.
+	 *
+	 * @param contentType
+	 *            The content type to validate
+	 * @throws IllegalArgumentException
+	 *             if content type is not allowed
+	 */
+	public void validateContentType( String contentType ) {
+
+		if ( contentType == null || !ALLOWED_CONTENT_TYPES.contains( contentType.toLowerCase() ) ) {
+			throw new IllegalArgumentException(
+					"Invalid content type: " + contentType + ". Allowed types: " + ALLOWED_CONTENT_TYPES );
+		}
+	}
+
+	/**
+	 * Validate file size against maximum limit.
+	 *
+	 * @param size
+	 *            The file size in bytes
+	 * @throws IllegalArgumentException
+	 *             if file size exceeds limit
+	 */
+	public void validateFileSize( long size ) {
+
+		if ( size > MAX_FILE_SIZE ) {
+			throw new IllegalArgumentException(
+					"File size exceeds maximum limit of " + ( MAX_FILE_SIZE / ( 1024 * 1024 ) ) + "MB" );
+		}
+		if ( size <= 0 ) {
+			throw new IllegalArgumentException( "File size must be greater than 0" );
+		}
+	}
+
+	/**
+	 * Validate file content by checking magic numbers.
+	 *
+	 * @param file
+	 *            The file to validate
+	 * @throws IllegalArgumentException
+	 *             if file content doesn't match expected image format
+	 */
+	public void validateFileContent( MultipartFile file ) {
+
+		try ( InputStream inputStream = file.getInputStream() ) {
+			byte[] header = new byte[12];
+			int bytesRead = inputStream.read( header );
+
+			if ( bytesRead < 4 ) {
+				throw new IllegalArgumentException( "File is too small to be a valid image" );
+			}
+
+			if ( !isValidImageMagicNumber( header ) ) {
+				throw new IllegalArgumentException( "File content does not match a valid image format" );
+			}
+		} catch ( IOException e ) {
+			throw new IllegalArgumentException( "Unable to read file content for validation", e );
+		}
+	}
+
+	private boolean isValidImageMagicNumber( byte[] header ) {
+
+		// Check JPEG
+		if ( startsWith( header, JPEG_MAGIC ) ) {
+			return true;
+		}
+		// Check PNG
+		if ( startsWith( header, PNG_MAGIC ) ) {
+			return true;
+		}
+		// Check GIF
+		if ( startsWith( header, GIF_MAGIC ) ) {
+			return true;
+		}
+		// Check WebP (RIFF....WEBP)
+		if ( startsWith( header, WEBP_MAGIC ) && header.length >= 12 ) {
+			byte[] webpSignature = Arrays.copyOfRange( header, 8, 12 );
+			return "WEBP".equals( new String( webpSignature ) );
+		}
+		return false;
+	}
+
+	private boolean startsWith( byte[] array, byte[] prefix ) {
+
+		if ( array.length < prefix.length ) {
+			return false;
+		}
+		for ( int i = 0; i < prefix.length; i++ ) {
+			if ( array[i] != prefix[i] ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	/**
 	 * Generate a pre-signed URL for uploading an image directly from the browser
 	 *
@@ -55,8 +171,11 @@ public class S3Service {
 	 */
 	public String generatePresignedUploadUrl( Long itemId, String contentType ) {
 
+		// Validate content type before generating URL
+		validateContentType( contentType );
+
 		try {
-			String fileName = generateFileName( itemId );
+			String fileName = generateFileName( itemId, contentType );
 			String objectKey = "items/" + itemId + "/" + fileName;
 
 			// Set the expiration time for the URL
@@ -92,8 +211,13 @@ public class S3Service {
 	@CacheEvict( value = "itemImages", key = "#itemId" )
 	public void uploadFile( Long itemId, MultipartFile file ) {
 
+		// Validate file before upload
+		validateContentType( file.getContentType() );
+		validateFileSize( file.getSize() );
+		validateFileContent( file );
+
 		try {
-			String fileName = generateFileName( itemId );
+			String fileName = generateFileName( itemId, file.getContentType() );
 			String objectKey = "items/" + itemId + "/" + fileName;
 
 			ObjectMetadata metadata = new ObjectMetadata();
@@ -217,9 +341,24 @@ public class S3Service {
 		log.info( "Evicted all entries from image cache" );
 	}
 
-	private String generateFileName( Long itemId ) {
+	private String generateFileName( Long itemId, String contentType ) {
 
-		return "image-" + UUID.randomUUID().toString() + ".jpg";
+		String extension = getExtensionFromContentType( contentType );
+		return "image-" + UUID.randomUUID().toString() + extension;
+	}
+
+	private String getExtensionFromContentType( String contentType ) {
+
+		if ( contentType == null ) {
+			return ".jpg";
+		}
+		return switch ( contentType.toLowerCase() ) {
+			case "image/jpeg" -> ".jpg";
+			case "image/png" -> ".png";
+			case "image/webp" -> ".webp";
+			case "image/gif" -> ".gif";
+			default -> ".jpg";
+		};
 	}
 
 	@NotNull

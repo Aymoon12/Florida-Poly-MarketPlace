@@ -1,5 +1,6 @@
 package org.marketplace.marketplace.controllers;
 
+import org.marketplace.marketplace.auth.config.AuthenticationUtil;
 import org.marketplace.marketplace.repository.SavedListingRepository;
 import org.marketplace.marketplace.services.SavedListingService;
 import org.springframework.http.ResponseEntity;
@@ -19,53 +20,39 @@ public class SavedListingController {
 	private final SavedListingService savedListingService;
 
 	@PostMapping( "/save" )
-	public ResponseEntity<?> saveItem( @RequestParam( "userId" ) final Long userId,
-			@RequestParam( "itemId" ) final Long itemId ) {
+	public ResponseEntity<?> saveItem( @RequestParam( "itemId" ) final Long itemId ) {
 
-		try {
-			return ResponseEntity.ok( savedListingService.saveItem( userId, itemId ) );
-		} catch ( Exception e ) {
-			return ResponseEntity.badRequest().build();
-		}
+		Long userId = AuthenticationUtil.getCurrentUserId();
+		return ResponseEntity.ok( savedListingService.saveItem( userId, itemId ) );
 	}
 
 	@DeleteMapping( "/unsave" )
-	public ResponseEntity<?> unsaveItem( @RequestParam( "userId" ) final Long userId,
-			@RequestParam( "itemId" ) final Long itemId ) {
+	public ResponseEntity<?> unsaveItem( @RequestParam( "itemId" ) final Long itemId ) {
 
-		try {
-			return ResponseEntity.ok( savedListingService.unsaveItem( userId, itemId ) );
-		} catch ( Exception e ) {
-			return ResponseEntity.badRequest().build();
-		}
+		Long userId = AuthenticationUtil.getCurrentUserId();
+		return ResponseEntity.ok( savedListingService.unsaveItem( userId, itemId ) );
 	}
 
 	@GetMapping( "/last-five" )
-	public ResponseEntity<?> getLastFiveSavedListings( @RequestParam( "userId" ) final Long userId ) {
+	public ResponseEntity<?> getLastFiveSavedListings() {
 
-		try {
-			final var savedListings = savedListingService.getLastFiveSavedListings( userId );
-			log.info( "Last five saved listings retrieved successfully" );
-			return ResponseEntity.ok( savedListings );
-		} catch ( Exception e ) {
-			return ResponseEntity.badRequest().build();
-		}
+		Long userId = AuthenticationUtil.getCurrentUserId();
+		final var savedListings = savedListingService.getLastFiveSavedListings( userId );
+		log.info( "Last five saved listings retrieved successfully" );
+		return ResponseEntity.ok( savedListings );
 	}
 
 	@GetMapping( "/getAllSaved" )
-	public ResponseEntity<?> getSaved( @RequestParam( "userId" ) final Long userId ) {
+	public ResponseEntity<?> getSaved() {
 
+		Long userId = AuthenticationUtil.getCurrentUserId();
 		return ResponseEntity.ok( savedListingService.getSavedListings( userId ) );
 	}
 
 	@GetMapping( "/check" )
-	public ResponseEntity<?> isItemSaved( @RequestParam( "userId" ) final Long userId,
-			@RequestParam( "itemId" ) final Long itemId ) {
+	public ResponseEntity<?> isItemSaved( @RequestParam( "itemId" ) final Long itemId ) {
 
-		try {
-			return ResponseEntity.ok( savedListingRepository.existsByUserIdAndItemId( userId, itemId ) );
-		} catch ( Exception e ) {
-			return ResponseEntity.badRequest().build();
-		}
+		Long userId = AuthenticationUtil.getCurrentUserId();
+		return ResponseEntity.ok( savedListingRepository.existsByUserIdAndItemId( userId, itemId ) );
 	}
 }

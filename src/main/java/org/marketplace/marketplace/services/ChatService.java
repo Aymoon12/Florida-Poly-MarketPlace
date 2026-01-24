@@ -34,13 +34,17 @@ public class ChatService {
 	private final UserRepository userRepository;
 	private final ItemRepository itemRepository;
 	private final WebSocketNotificationService webSocketNotificationService;
+	private final BlockedUserService blockedUserService;
 
 	@Transactional( readOnly = true )
 	public List<ConversationDTO> getUserConversations( Long userId ) {
 
 		List<Conversation> conversations = conversationRepository.findAllByUserId( userId );
 
-		return conversations.stream().map( conv -> mapToConversationDTO( conv, userId ) )
+		// Filter out conversations with blocked users
+		return conversations.stream()
+				.filter( conv -> !isBlockedConversation( conv, userId ) )
+				.map( conv -> mapToConversationDTO( conv, userId ) )
 				.collect( Collectors.toList() );
 	}
 
@@ -55,6 +59,11 @@ public class ChatService {
 			throw new ResponseStatusException( HttpStatus.FORBIDDEN, "Not authorized to access this conversation" );
 		}
 
+		// Check if users are blocked
+		if ( isBlockedConversation( conversation, userId ) ) {
+			throw new ResponseStatusException( HttpStatus.FORBIDDEN, "Cannot access conversation with blocked user" );
+		}
+
 		return mapToConversationDTO( conversation, userId );
 	}
 
@@ -67,6 +76,11 @@ public class ChatService {
 
 		if ( !conversation.getBuyer().getID().equals( userId ) && !conversation.getSeller().getID().equals( userId ) ) {
 			throw new ResponseStatusException( HttpStatus.FORBIDDEN, "Not authorized to access this conversation" );
+		}
+
+		// Check if users are blocked
+		if ( isBlockedConversation( conversation, userId ) ) {
+			throw new ResponseStatusException( HttpStatus.FORBIDDEN, "Cannot access messages with blocked user" );
 		}
 
 		List<Message> messages = messageRepository.findAllByConversationId( conversationId );
@@ -87,7 +101,7 @@ public class ChatService {
 	}
 
 	@Transactional
-	public ConversationDTO createConversation( CreateConversationRequest request) {
+	public ConversationDTO createConversation( CreateConversationRequest request ) {
 
 		Long buyerId = request.getUserId();
 		// Get item and verify it exists
@@ -104,6 +118,12 @@ public class ChatService {
 		// Check if buyer is trying to message themselves
 		if ( buyer.getID().equals( seller.getID() ) ) {
 			throw new ResponseStatusException( HttpStatus.BAD_REQUEST, "Cannot message yourself" );
+		}
+
+		// Check if users are blocked
+		if ( blockedUserService.isBlockedBetweenUsers( buyerId, seller.getID() ) ) {
+			throw new ResponseStatusException( HttpStatus.FORBIDDEN,
+					"Cannot start a conversation with this user due to blocking" );
 		}
 
 		// Check if conversation already exists between buyer and item
@@ -157,6 +177,16 @@ public class ChatService {
 				&& !conversation.getSeller().getID().equals( senderId ) ) {
 			throw new ResponseStatusException( HttpStatus.FORBIDDEN,
 					"Not authorized to send messages in this conversation" );
+		}
+
+		// Check if users are blocked
+		Long otherUserId = conversation.getBuyer().getID().equals( senderId )
+				? conversation.getSeller().getID()
+				: conversation.getBuyer().getID();
+
+		if ( blockedUserService.isBlockedBetweenUsers( senderId, otherUserId ) ) {
+			throw new ResponseStatusException( HttpStatus.FORBIDDEN,
+					"Cannot send messages to this user due to blocking" );
 		}
 
 		// Create and save message
@@ -218,6 +248,15 @@ public class ChatService {
 	}
 
 	// Helper methods
+
+	private boolean isBlockedConversation( Conversation conversation, Long userId ) {
+
+		Long otherUserId = conversation.getBuyer().getID().equals( userId )
+				? conversation.getSeller().getID()
+				: conversation.getBuyer().getID();
+
+		return blockedUserService.isBlockedBetweenUsers( userId, otherUserId );
+	}
 
 	private void markMessagesAsRead( List<Message> messages, Long userId ) {
 

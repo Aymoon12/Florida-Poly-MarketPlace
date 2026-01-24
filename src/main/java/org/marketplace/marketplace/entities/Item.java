@@ -14,6 +14,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -28,7 +29,12 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table
+@Table( name = "item", indexes = {
+		@Index( name = "idx_item_user_id", columnList = "user_id" ),
+		@Index( name = "idx_item_status", columnList = "status" ),
+		@Index( name = "idx_item_category", columnList = "category" ),
+		@Index( name = "idx_item_created_at", columnList = "createdAt" )
+} )
 @Builder
 @ToString
 public class Item {
