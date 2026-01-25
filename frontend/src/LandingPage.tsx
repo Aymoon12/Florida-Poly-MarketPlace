@@ -368,17 +368,20 @@ const LandingPage = () => {
                             >
                                 <Box sx={{ display: "flex", gap: 2, flexWrap: { xs: "wrap", sm: "nowrap" } }}>
                                     <Button
-                                        variant="contained"
+                                        variant="outlined"
                                         size="large"
                                         onClick={handleLogin}
                                         sx={{
-                                            bgcolor: "white",
-                                            color: theme.palette.primary.main,
-                                            fontWeight: 700,
+                                            borderColor: "rgba(255,255,255,0.6)",
+                                            color: "white",
+                                            fontWeight: 600,
                                             borderRadius: 3,
                                             px: 4,
                                             py: 1.5,
-                                            "&:hover": { bgcolor: "#f8fafc" }
+                                            "&:hover": {
+                                                borderColor: "white",
+                                                bgcolor: "rgba(255,255,255,0.1)"
+                                            }
                                         }}
                                     >
                                         Get Started
@@ -895,18 +898,19 @@ const LandingPage = () => {
                                     a new way to exchange goods and services on campus.
                                 </Typography>
                                 <Button
-                                    variant="contained"
+                                    variant="outlined"
                                     size="large"
                                     onClick={handleLogin}
                                     sx={{
-                                        bgcolor: "white",
-                                        color: theme.palette.primary.main,
-                                        borderRadius: 50,
+                                        borderColor: "rgba(255,255,255,0.6)",
+                                        color: "white",
+                                        fontWeight: 600,
+                                        borderRadius: 3,
                                         px: 4,
                                         py: 1.5,
-                                        fontWeight: 600,
                                         "&:hover": {
-                                            bgcolor: "#f7fafc"
+                                            borderColor: "white",
+                                            bgcolor: "rgba(255,255,255,0.1)"
                                         }
                                     }}
                                 >
