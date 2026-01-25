@@ -24,7 +24,6 @@ import {
 } from "@mui/material";
 import TuneIcon from "@mui/icons-material/Tune";
 import CloseIcon from "@mui/icons-material/Close";
-import FilterListIcon from "@mui/icons-material/FilterList";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import api from "./services/api";
 import { PageLayout } from './components/layout';
@@ -165,9 +164,8 @@ const SearchResults: React.FC = () => {
         description: item.description,
         price: item.price,
         category: item.category,
-        seller: item.seller,
+        seller: { name: item.seller },
         imageUrls: item.imageUrls,
-        status: item.status,
     });
 
     const getSearchTitle = () => {
@@ -386,7 +384,6 @@ const SearchResults: React.FC = () => {
                         <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
                             <ItemCard
                                 item={mapItemToItemType(item)}
-                                onClick={() => navigate(`/item/${item.id}`)}
                             />
                         </Grid>
                     ))}

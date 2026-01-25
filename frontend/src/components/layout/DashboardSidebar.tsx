@@ -21,7 +21,6 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import SettingsIcon from '@mui/icons-material/Settings';
 import InboxIcon from '@mui/icons-material/Inbox';
 import HomeIcon from '@mui/icons-material/Home';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
 interface MenuItem {
     icon: React.ReactNode;

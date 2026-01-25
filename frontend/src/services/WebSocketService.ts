@@ -8,7 +8,7 @@ type ConnectionCallback = (connected: boolean) => void;
 type StompClient = import('@stomp/stompjs').Client;
 type StompSubscription = import('@stomp/stompjs').StompSubscription;
 
-const WS_URL = 'http://localhost:8080/ws';
+const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:9090/ws';
 
 class WebSocketService {
     private client: StompClient | null = null;

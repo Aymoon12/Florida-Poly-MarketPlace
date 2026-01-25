@@ -59,7 +59,7 @@ const MarkAsSoldDialog: React.FC<MarkAsSoldDialogProps> = ({
     setError(null);
 
     try {
-      const buyersList = await SaleService.getPotentialBuyers(userId, itemId);
+      const buyersList = await SaleService.getPotentialBuyers(itemId);
       setBuyers(buyersList);
       if (buyersList.length === 0) {
         setError('No potential buyers found. Users who have messaged you about this item will appear here.');
@@ -88,7 +88,7 @@ const MarkAsSoldDialog: React.FC<MarkAsSoldDialogProps> = ({
     setError(null);
 
     try {
-      const sale = await SaleService.markAsSold(userId, {
+      const sale = await SaleService.markAsSold({
         itemId,
         buyerId: selectedBuyerId as number,
         salePrice: parseFloat(salePrice),

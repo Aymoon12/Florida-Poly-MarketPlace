@@ -1,5 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
-
 // Define the notification interface
 export interface Notification {
     id: number;
@@ -91,7 +89,7 @@ export const mockNotificationService = {
     },
 
     // Get unread count for a specific user
-    getUserUnreadCount: (userId: string): Promise<number> => {
+    getUserUnreadCount: (_userId: string): Promise<number> => {
         return new Promise((resolve) => {
             setTimeout(() => {
                 // In a real implementation, this would filter notifications by userId

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import {
     Alert,
     Avatar,
-    Badge,
     Box,
     Button,
     Chip,
@@ -21,10 +20,8 @@ import {
     useTheme,
     alpha,
 } from "@mui/material";
-import NotificationsIcon from "@mui/icons-material/Notifications";
 import MarkEmailReadIcon from "@mui/icons-material/MarkEmailRead";
 import DeleteIcon from "@mui/icons-material/Delete";
-import FilterListIcon from "@mui/icons-material/FilterList";
 import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import EmailIcon from "@mui/icons-material/Email";

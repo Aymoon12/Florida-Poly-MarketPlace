@@ -63,7 +63,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
         comment: comment.trim() || undefined,
       };
 
-      await ReviewService.createReview(userId, request);
+      await ReviewService.createReview(request);
       onSuccess();
     } catch (err: unknown) {
       console.error('Error submitting review:', err);

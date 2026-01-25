@@ -20,7 +20,7 @@ const PendingReviewsSection: React.FC = () => {
     if (!userId) return;
 
     try {
-      const reviews = await SaleService.getPendingReviews(userId);
+      const reviews = await SaleService.getPendingReviews();
       setPendingReviews(reviews);
     } catch (error) {
       console.error('Error fetching pending reviews:', error);
