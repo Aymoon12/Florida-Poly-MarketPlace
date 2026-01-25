@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
     Alert,
     Box,
     Button,
-    Card,
-    CardContent,
     Checkbox,
     CircularProgress,
     Divider,
@@ -72,9 +69,8 @@ const mockDefaultSettings: UserSettings = {
 };
 
 const SettingsPage: React.FC = () => {
-    const navigate = useNavigate();
     const theme = useTheme();
-    const { mode, setMode, isDark } = useThemeMode();
+    const { setMode, isDark } = useThemeMode();
     const [settings, setSettings] = useState<UserSettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -163,10 +159,7 @@ const SettingsPage: React.FC = () => {
 
         setSaving(true);
         try {
-            await api.put('/api/v1/settings', {
-                userId: parseInt(userId),
-                ...settings
-            });
+            await api.put('/api/v1/settings', settings);
 
             setSnackbarMessage("Settings saved successfully");
             setSnackbarOpen(true);

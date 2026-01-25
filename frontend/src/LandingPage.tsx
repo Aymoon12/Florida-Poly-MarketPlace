@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import polylogo from "./assets/poly-logo.webp"
 import { motion } from "framer-motion";
 import {
@@ -183,7 +183,8 @@ const LandingPage = () => {
     ];
 
     const handleLogin = () => {
-        window.location.href = "http://localhost:9090/oauth2/authorization/azure-dev";
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9090';
+        window.location.href = `${apiBaseUrl}/oauth2/authorization/azure-dev`;
     };
 
     const features = [

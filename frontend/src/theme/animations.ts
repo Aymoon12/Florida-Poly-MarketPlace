@@ -134,7 +134,7 @@ export const hoverEffects = {
     },
   } as SxProps<Theme>,
 
-  glow: (color: string = 'primary.main') => ({
+  glow: (_color: string = 'primary.main') => ({
     transition: transitions.emphasized,
     '&:hover': {
       boxShadow: `0 0 20px rgba(83, 45, 142, 0.3)`,

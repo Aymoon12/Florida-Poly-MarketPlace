@@ -6,14 +6,12 @@ import {
     IconButton,
     Drawer,
     Badge,
-    Divider,
     useMediaQuery,
     useTheme,
     alpha,
     Chip,
 } from '@mui/material';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import MenuIcon from '@mui/icons-material/Menu';
 import WifiIcon from '@mui/icons-material/Wifi';
 import WifiOffIcon from '@mui/icons-material/WifiOff';
@@ -63,7 +61,7 @@ const InboxPage: React.FC = () => {
         try {
             if (!userId) return;
             setLoading(true);
-            const data = await ChatService.getUserConversations(userId);
+            const data = await ChatService.getUserConversations();
             setConversations(data);
 
             // Select the first conversation by default if none is selected and there are conversations

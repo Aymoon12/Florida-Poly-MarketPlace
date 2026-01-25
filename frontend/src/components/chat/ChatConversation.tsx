@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   CircularProgress,
-  Divider,
   Paper,
   AppBar,
   Toolbar,
@@ -54,7 +53,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ conversationId, onB
   const fetchConversation = useCallback(async () => {
     try {
       if (!userId) return;
-      const data = await ChatService.getConversation(conversationId, userId);
+      const data = await ChatService.getConversation(conversationId);
       setConversation(data);
     } catch (error) {
       console.error('Error fetching conversation:', error);
@@ -65,7 +64,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ conversationId, onB
     try {
       if (!userId) return;
       setLoading(true);
-      const data = await ChatService.getMessages(conversationId, userId);
+      const data = await ChatService.getMessages(conversationId);
       setMessages(data);
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -80,7 +79,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ conversationId, onB
 
     // Mark conversation as read when opened (using both REST and WebSocket)
     if (userId) {
-      ChatService.markAsRead(conversationId, userId);
+      ChatService.markAsRead(conversationId);
       if (isConnected) {
         wsMarkAsRead(conversationId);
       }
@@ -104,7 +103,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ conversationId, onB
       if (!userId) return;
       setSending(true);
       // Use REST API for sending - provides better error handling and response
-      const newMessage = await ChatService.sendMessage(messageRequest, userId);
+      const newMessage = await ChatService.sendMessage(messageRequest);
       setMessages(prev => {
         // Check if message already exists (might have come via WebSocket)
         const exists = prev.some(m => m.id === newMessage.id);
@@ -133,7 +132,6 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ conversationId, onB
   // Determine the other user
   const isCurrentUserBuyer = conversation?.buyerId.toString() === userId;
   const otherUserName = isCurrentUserBuyer ? conversation?.sellerName : conversation?.buyerName;
-  const otherUserId = isCurrentUserBuyer ? conversation?.sellerId : conversation?.buyerId;
 
   return (
     <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 0, overflow: 'hidden' }}>

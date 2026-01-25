@@ -64,7 +64,7 @@ const CreateListing: React.FC = () => {
     const [files, setFiles] = useState<UploadedFile[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-    const [activeStep, setActiveStep] = useState(0);
+    const [activeStep] = useState(0);
     const [dragActive, setDragActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -199,12 +199,6 @@ const CreateListing: React.FC = () => {
 
     const showNotification = (message: string, type: 'success' | 'error') => {
         setNotification({ message, type });
-    };
-
-    const canProceed = () => {
-        if (activeStep === 0) return files.length > 0;
-        if (activeStep === 1) return title && price && category && description;
-        return true;
     };
 
     return (

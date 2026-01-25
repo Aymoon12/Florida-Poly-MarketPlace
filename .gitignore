@@ -37,6 +37,7 @@ application-local.yaml
 application-dev.yaml
 
 .env
+.env.docker
 
 ### Node ###
 node_modules/
