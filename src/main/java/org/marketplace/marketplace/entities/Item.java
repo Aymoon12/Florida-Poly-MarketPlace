@@ -91,4 +91,7 @@ public class Item {
 	@OneToMany( mappedBy = "reviewedItem", cascade = CascadeType.ALL, orphanRemoval = true )
 	private List<Review> reviews = new ArrayList<>();
 
+	@OneToMany( mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true )
+	private List<ItemImage> images = new ArrayList<>();
+
 }

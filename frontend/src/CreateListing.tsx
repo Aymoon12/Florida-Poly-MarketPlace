@@ -83,12 +83,21 @@ const CreateListing: React.FC = () => {
                 }
             });
 
-            const uploadUrl = presignedUrlResponse.data.uploadUrl;
+            const { uploadUrl, objectKey } = presignedUrlResponse.data;
 
             // Direct axios call to S3 (not our API)
             await axios.put(uploadUrl, file, {
                 headers: {
                     'Content-Type': file.type,
+                }
+            });
+
+            // Confirm the upload to save image record in database
+            await api.post('/api/v1/images/confirm-upload', null, {
+                params: {
+                    itemId: itemId,
+                    objectKey: objectKey,
+                    contentType: file.type
                 }
             });
 

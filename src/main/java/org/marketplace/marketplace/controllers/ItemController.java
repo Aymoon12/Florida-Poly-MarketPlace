@@ -2,12 +2,13 @@ package org.marketplace.marketplace.controllers;
 
 import java.util.List;
 
-import org.marketplace.marketplace.auth.config.AuthenticationUtil;
 import org.marketplace.marketplace.dto.ItemDto;
 import org.marketplace.marketplace.dto.ItemResponseDto;
+import org.marketplace.marketplace.entities.User;
 import org.marketplace.marketplace.requests.ItemRequest;
 import org.marketplace.marketplace.services.ItemService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,9 +32,10 @@ public class ItemController {
 	private final ItemService itemService;
 
 	@PostMapping( "/createListing" )
-	public ResponseEntity<ItemResponseDto> createListing( @Valid @RequestBody final ItemRequest request ) {
+	public ResponseEntity<ItemResponseDto> createListing( @Valid @RequestBody final ItemRequest request,
+			@AuthenticationPrincipal User user ) {
 
-		Long itemId = itemService.addItem( request );
+		Long itemId = itemService.addItem( request, user.getID() );
 
 		if ( itemId != null ) {
 			return ResponseEntity.ok( ItemResponseDto.success( itemId ) );
@@ -49,10 +51,9 @@ public class ItemController {
 	}
 
 	@GetMapping( "/getAllActiveListings" )
-	public ResponseEntity<?> getAllActiveListings() {
+	public ResponseEntity<?> getAllActiveListings( @AuthenticationPrincipal User user ) {
 
-		Long userId = AuthenticationUtil.getCurrentUserId();
-		return ResponseEntity.ok( itemService.getAllActiveListings( userId ) );
+		return ResponseEntity.ok( itemService.getAllActiveListings( user.getID() ) );
 	}
 
 	@GetMapping( "/search" )
@@ -64,10 +65,9 @@ public class ItemController {
 	}
 
 	@GetMapping( "/{itemId}" )
-	public ResponseEntity<?> getItemById( @PathVariable final Long itemId ) {
+	public ResponseEntity<?> getItemById( @AuthenticationPrincipal User user, @PathVariable final Long itemId ) {
 
-		Long userId = AuthenticationUtil.getCurrentUserId();
-		ItemDto item = itemService.getItemById( userId, itemId );
+		ItemDto item = itemService.getItemById( user.getID(), itemId );
 
 		if ( item != null ) {
 			return ResponseEntity.ok( item );
@@ -88,10 +88,9 @@ public class ItemController {
 	}
 
 	@GetMapping( "/getHistory" )
-	public ResponseEntity<?> getHistory() {
+	public ResponseEntity<?> getHistory( @AuthenticationPrincipal User user ) {
 
-		Long userId = AuthenticationUtil.getCurrentUserId();
-		List<ItemDto> items = itemService.getHistory( userId );
+		List<ItemDto> items = itemService.getHistory( user.getID() );
 		if ( !items.isEmpty() ) {
 			return ResponseEntity.ok( items );
 		} else {
@@ -100,10 +99,9 @@ public class ItemController {
 	}
 
 	@GetMapping( "/getRecentlyViewed" )
-	public ResponseEntity<?> getRecentlyViewedByUserId() {
+	public ResponseEntity<?> getRecentlyViewedByUserId( @AuthenticationPrincipal User user ) {
 
-		Long userId = AuthenticationUtil.getCurrentUserId();
-		List<ItemDto> items = itemService.getRecentlyViewedItems( userId );
+		List<ItemDto> items = itemService.getRecentlyViewedItems( user.getID() );
 		if ( !items.isEmpty() ) {
 			return ResponseEntity.ok( items );
 		} else {

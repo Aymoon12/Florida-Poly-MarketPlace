@@ -4,10 +4,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.marketplace.marketplace.auth.config.AuthenticationUtil;
 import org.marketplace.marketplace.dto.CartItemDto;
+import org.marketplace.marketplace.entities.User;
 import org.marketplace.marketplace.services.CartService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,36 +30,35 @@ public class CartController {
     private final CartService cartService;
 
     @GetMapping
-    public ResponseEntity<List<CartItemDto>> getCartItems() {
-        Long userId = AuthenticationUtil.getCurrentUserId();
-        return ResponseEntity.ok(cartService.getCartItems(userId));
+    public ResponseEntity<List<CartItemDto>> getCartItems( @AuthenticationPrincipal User user ) {
+        return ResponseEntity.ok(cartService.getCartItems(user.getID()));
     }
 
     @PostMapping("/add")
     public ResponseEntity<CartItemDto> addToCart(
+            @AuthenticationPrincipal User user,
             @RequestParam final Long itemId,
             @RequestParam(defaultValue = "1") final int quantity) {
 
-        Long userId = AuthenticationUtil.getCurrentUserId();
-        CartItemDto cartItem = cartService.addItemToCart(userId, itemId, quantity);
+        CartItemDto cartItem = cartService.addItemToCart(user.getID(), itemId, quantity);
         return ResponseEntity.ok(cartItem);
     }
 
     @PutMapping("/{cartItemId}")
     public ResponseEntity<CartItemDto> updateCartItem(
+            @AuthenticationPrincipal User user,
             @PathVariable final Long cartItemId,
             @RequestParam final int quantity) {
 
-        Long userId = AuthenticationUtil.getCurrentUserId();
-        CartItemDto cartItem = cartService.updateCartItem(userId, cartItemId, quantity);
+        CartItemDto cartItem = cartService.updateCartItem(user.getID(), cartItemId, quantity);
         return ResponseEntity.ok(cartItem);
     }
 
     @DeleteMapping("/{cartItemId}")
-    public ResponseEntity<?> removeCartItem(@PathVariable final Long cartItemId) {
+    public ResponseEntity<?> removeCartItem( @AuthenticationPrincipal User user,
+            @PathVariable final Long cartItemId ) {
 
-        Long userId = AuthenticationUtil.getCurrentUserId();
-        boolean removed = cartService.removeCartItem(userId, cartItemId);
+        boolean removed = cartService.removeCartItem(user.getID(), cartItemId);
         if (removed) {
             Map<String, String> response = new HashMap<>();
             response.put("message", "Item removed from cart");
@@ -69,9 +69,8 @@ public class CartController {
     }
 
     @DeleteMapping("/clear")
-    public ResponseEntity<?> clearCart() {
-        Long userId = AuthenticationUtil.getCurrentUserId();
-        boolean cleared = cartService.clearCart(userId);
+    public ResponseEntity<?> clearCart( @AuthenticationPrincipal User user ) {
+        boolean cleared = cartService.clearCart(user.getID());
         if (cleared) {
             Map<String, String> response = new HashMap<>();
             response.put("message", "Cart cleared successfully");
@@ -82,9 +81,8 @@ public class CartController {
     }
 
     @GetMapping("/count")
-    public ResponseEntity<?> getCartItemCount() {
-        Long userId = AuthenticationUtil.getCurrentUserId();
-        long count = cartService.getCartItemCount(userId);
+    public ResponseEntity<?> getCartItemCount( @AuthenticationPrincipal User user ) {
+        long count = cartService.getCartItemCount(user.getID());
         Map<String, Long> response = new HashMap<>();
         response.put("count", count);
         return ResponseEntity.ok(response);

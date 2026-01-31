@@ -40,10 +40,10 @@ public class ItemService {
 	private final ItemWatcherService watcherService;
 
 	@Transactional
-	public Long addItem( final ItemRequest itemRequest ) {
+	public Long addItem( final ItemRequest itemRequest, Long userId ) {
 
 		try {
-			User user = userRepository.findById( Long.parseLong( itemRequest.getUserId() ) ).orElseThrow();
+			User user = userRepository.findById( userId ).orElseThrow();
 
 			Item item = Item.builder().title( itemRequest.getName() ).description( itemRequest.getDescription() )
 					.price( BigDecimal.valueOf( itemRequest.getPrice() ) )

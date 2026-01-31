@@ -9,4 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ImageUploadUrlDto {
     private String uploadUrl;
+    private String objectKey;
 } 

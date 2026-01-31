@@ -3,6 +3,7 @@ package org.marketplace.marketplace.services;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -12,21 +13,24 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
+import org.marketplace.marketplace.dto.ImageUploadUrlDto;
 import org.marketplace.marketplace.dto.ItemDto;
 import org.marketplace.marketplace.entities.Item;
+import org.marketplace.marketplace.entities.ItemImage;
+import org.marketplace.marketplace.repository.ItemImageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 import lombok.extern.log4j.Log4j2;
 
@@ -40,6 +44,9 @@ public class S3Service {
 	@Autowired
 	@Lazy
 	private S3Service s3Service;
+
+	@Autowired
+	private ItemImageRepository itemImageRepository;
 
 	@Value( "${aws.s3.bucket.name}" )
 	private String bucketName;
@@ -167,9 +174,9 @@ public class S3Service {
 	 *            The item ID this image is for
 	 * @param contentType
 	 *            The content type of the file (e.g., image/jpeg)
-	 * @return A pre-signed URL for PUT operation to upload an image
+	 * @return DTO containing the pre-signed URL and object key
 	 */
-	public String generatePresignedUploadUrl( Long itemId, String contentType ) {
+	public ImageUploadUrlDto generatePresignedUploadUrl( Long itemId, String contentType ) {
 
 		// Validate content type before generating URL
 		validateContentType( contentType );
@@ -193,7 +200,7 @@ public class S3Service {
 			URL url = s3Client.generatePresignedUrl( generatePresignedUrlRequest );
 			log.info( "Generated presigned upload URL for item: {}, URL: {}", itemId, url );
 
-			return url.toString();
+			return new ImageUploadUrlDto( url.toString(), objectKey );
 		} catch ( Exception e ) {
 			log.error( "Error generating presigned upload URL: {}", e.getMessage(), e );
 			throw new RuntimeException( "Failed to generate presigned upload URL", e );
@@ -201,15 +208,45 @@ public class S3Service {
 	}
 
 	/**
+	 * Confirm a presigned URL upload and save the image record to database.
+	 *
+	 * @param item
+	 *            The item this image is for
+	 * @param objectKey
+	 *            The S3 object key that was uploaded
+	 * @param contentType
+	 *            The content type of the uploaded file
+	 */
+	@CacheEvict( value = "itemImages", key = "#item.id" )
+	@Transactional
+	public void confirmPresignedUpload( Item item, String objectKey, String contentType ) {
+
+		// Validate content type
+		validateContentType( contentType );
+
+		// Save image record to database
+		ItemImage itemImage = ItemImage.builder()
+				.item( item )
+				.objectKey( objectKey )
+				.contentType( contentType )
+				.createdAt( LocalDateTime.now() )
+				.build();
+		itemImageRepository.save( itemImage );
+
+		log.info( "Confirmed presigned upload for item: {}, key: {}", item.getId(), objectKey );
+	}
+
+	/**
 	 * Upload a file directly to S3 from the server. Evicts the image cache for this item.
 	 *
-	 * @param itemId
-	 *            The item ID this image is for
+	 * @param item
+	 *            The item this image is for
 	 * @param file
 	 *            The file to upload
 	 */
-	@CacheEvict( value = "itemImages", key = "#itemId" )
-	public void uploadFile( Long itemId, MultipartFile file ) {
+	@CacheEvict( value = "itemImages", key = "#item.id" )
+	@Transactional
+	public void uploadFile( Item item, MultipartFile file ) {
 
 		// Validate file before upload
 		validateContentType( file.getContentType() );
@@ -217,8 +254,8 @@ public class S3Service {
 		validateFileContent( file );
 
 		try {
-			String fileName = generateFileName( itemId, file.getContentType() );
-			String objectKey = "items/" + itemId + "/" + fileName;
+			String fileName = generateFileName( item.getId(), file.getContentType() );
+			String objectKey = "items/" + item.getId() + "/" + fileName;
 
 			ObjectMetadata metadata = new ObjectMetadata();
 			metadata.setContentType( file.getContentType() );
@@ -226,7 +263,16 @@ public class S3Service {
 
 			s3Client.putObject( bucketName, objectKey, file.getInputStream(), metadata );
 
-			log.info( "Successfully uploaded file for item: {}, key: {}", itemId, objectKey );
+			// Save image record to database
+			ItemImage itemImage = ItemImage.builder()
+					.item( item )
+					.objectKey( objectKey )
+					.contentType( file.getContentType() )
+					.createdAt( LocalDateTime.now() )
+					.build();
+			itemImageRepository.save( itemImage );
+
+			log.info( "Successfully uploaded file for item: {}, key: {}", item.getId(), objectKey );
 		} catch ( IOException e ) {
 			log.error( "Error uploading file: {}", e.getMessage(), e );
 			throw new RuntimeException( "Failed to upload file", e );
@@ -244,9 +290,8 @@ public class S3Service {
 	public List<String> getItemImagesUrls( Long itemId ) {
 
 		try {
-			// List objects in the item's directory
-			List<String> objectKeys = s3Client.listObjects( bucketName, "items/" + itemId + "/" ).getObjectSummaries()
-					.stream().map( S3ObjectSummary::getKey ).toList();
+			// Get object keys from database instead of listing from S3
+			List<String> objectKeys = itemImageRepository.findObjectKeysByItemId( itemId );
 
 			// If no images found, return empty list
 			if ( objectKeys.isEmpty() ) {
@@ -301,17 +346,20 @@ public class S3Service {
 	 *            The item ID
 	 */
 	@CacheEvict( value = "itemImages", key = "#itemId" )
+	@Transactional
 	public void deleteItemImages( Long itemId ) {
 
 		try {
-			// List objects in the item's directory
-			List<String> objectKeys = s3Client.listObjects( bucketName, "items/" + itemId + "/" ).getObjectSummaries()
-					.stream().map( S3ObjectSummary::getKey ).toList();
+			// Get object keys from database
+			List<String> objectKeys = itemImageRepository.findObjectKeysByItemId( itemId );
 
-			// Delete each object
+			// Delete each object from S3
 			for ( String key : objectKeys ) {
 				s3Client.deleteObject( bucketName, key );
 			}
+
+			// Delete records from database
+			itemImageRepository.deleteAllByItemId( itemId );
 
 			log.info( "Deleted {} images for item: {}", objectKeys.size(), itemId );
 		} catch ( Exception e ) {

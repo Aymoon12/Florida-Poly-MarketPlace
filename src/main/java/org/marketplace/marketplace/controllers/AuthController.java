@@ -4,9 +4,9 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.marketplace.marketplace.auth.config.AuthenticationUtil;
 import org.marketplace.marketplace.entities.User;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,12 +23,11 @@ import java.util.Map;
 public class AuthController {
 
 	@GetMapping("/me")
-	public ResponseEntity<?> getCurrentUser() {
-		if (!AuthenticationUtil.isAuthenticated()) {
+	public ResponseEntity<?> getCurrentUser( @AuthenticationPrincipal User user ) {
+		if (user == null) {
 			return ResponseEntity.status(401).body(Map.of("error", "Not authenticated"));
 		}
 
-		User user = AuthenticationUtil.getCurrentUser();
 		return ResponseEntity.ok(Map.of(
 				"userId", user.getID(),
 				"name", user.getName(),

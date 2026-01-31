@@ -45,6 +45,8 @@ aws:
   secret.key: ${AWS_SECRET_KEY}
   s3:
     bucket.name: ${AWS_S3_BUCKET}
+    endpoint: ${AWS_ENDPOINT}
+    region: ${AWS_REGION}
     presigned-url.expiry: 900000
 
 app:

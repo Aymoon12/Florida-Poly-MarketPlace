@@ -2,13 +2,14 @@ package org.marketplace.marketplace.controllers;
 
 import java.util.List;
 
-import org.marketplace.marketplace.auth.config.AuthenticationUtil;
 import org.marketplace.marketplace.dto.CreateReviewRequest;
 import org.marketplace.marketplace.dto.RatingSummaryDto;
 import org.marketplace.marketplace.dto.ReviewDto;
 import org.marketplace.marketplace.entities.ReviewType;
+import org.marketplace.marketplace.entities.User;
 import org.marketplace.marketplace.services.ReviewService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,22 +34,22 @@ public class ReviewController {
 	private final ReviewService reviewService;
 
 	@PostMapping
-	public ResponseEntity<ReviewDto> createReview( @Valid @RequestBody CreateReviewRequest request ) {
+	public ResponseEntity<ReviewDto> createReview( @AuthenticationPrincipal User user,
+			@Valid @RequestBody CreateReviewRequest request ) {
 
-		Long userId = AuthenticationUtil.getCurrentUserId();
-		log.info( "Creating review for user: {}, sale: {}", userId, request.getSaleId() );
-		ReviewDto review = reviewService.createReview( userId, request );
+		log.info( "Creating review for user: {}, sale: {}", user.getID(), request.getSaleId() );
+		ReviewDto review = reviewService.createReview( user.getID(), request );
 
 		return ResponseEntity.ok( review );
 	}
 
 	@GetMapping( "/can-review" )
 	public ResponseEntity<Boolean> canReview(
+			@AuthenticationPrincipal User user,
 			@RequestParam Long saleId,
 			@RequestParam ReviewType reviewType ) {
 
-		Long userId = AuthenticationUtil.getCurrentUserId();
-		boolean canReview = reviewService.canReview( userId, saleId, reviewType );
+		boolean canReview = reviewService.canReview( user.getID(), saleId, reviewType );
 
 		return ResponseEntity.ok( canReview );
 	}
@@ -105,11 +106,11 @@ public class ReviewController {
 	}
 
 	@DeleteMapping( "/{reviewId}" )
-	public ResponseEntity<Boolean> deleteReview( @PathVariable Long reviewId ) {
+	public ResponseEntity<Boolean> deleteReview( @AuthenticationPrincipal User user,
+			@PathVariable Long reviewId ) {
 
-		Long userId = AuthenticationUtil.getCurrentUserId();
-		log.info( "Deleting review: {} by user: {}", reviewId, userId );
-		boolean success = reviewService.deleteReview( reviewId, userId );
+		log.info( "Deleting review: {} by user: {}", reviewId, user.getID() );
+		boolean success = reviewService.deleteReview( reviewId, user.getID() );
 
 		return ResponseEntity.ok( success );
 	}

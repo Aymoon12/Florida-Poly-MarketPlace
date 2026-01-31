@@ -2,14 +2,15 @@ package org.marketplace.marketplace.controllers;
 
 import java.util.List;
 
-import org.marketplace.marketplace.auth.config.AuthenticationUtil;
 import org.marketplace.marketplace.dto.ImageUploadUrlDto;
 import org.marketplace.marketplace.dto.PresignedUrlsDto;
 import org.marketplace.marketplace.entities.Item;
+import org.marketplace.marketplace.entities.User;
 import org.marketplace.marketplace.repository.ItemRepository;
 import org.marketplace.marketplace.services.S3Service;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,18 +43,19 @@ public class ImageController {
      *
      * @param itemId The ID of the item
      * @param contentType The content type of the file to be uploaded
-     * @return A presigned URL for uploading
+     * @return A presigned URL and object key for uploading
      */
     @GetMapping("/upload-url")
     public ResponseEntity<ImageUploadUrlDto> getUploadUrl(
+            @AuthenticationPrincipal User user,
             @RequestParam("itemId") @NotNull Long itemId,
             @RequestParam("contentType") @NotBlank String contentType) {
 
         // Verify user owns the item
-        verifyItemOwnership(itemId);
+        verifyItemOwnership(user, itemId);
 
-        String uploadUrl = s3Service.generatePresignedUploadUrl(itemId, contentType);
-        return ResponseEntity.ok(new ImageUploadUrlDto(uploadUrl));
+        ImageUploadUrlDto uploadDto = s3Service.generatePresignedUploadUrl(itemId, contentType);
+        return ResponseEntity.ok(uploadDto);
     }
 
     /**
@@ -66,15 +68,41 @@ public class ImageController {
      */
     @PostMapping("/upload")
     public ResponseEntity<String> uploadFile(
+            @AuthenticationPrincipal User user,
             @RequestParam("itemId") @NotNull Long itemId,
             @RequestParam("file") @NotNull MultipartFile file) {
 
-        // Verify user owns the item
-        verifyItemOwnership(itemId);
+        // Verify user owns the item and get the item
+        Item item = getItemAndVerifyOwnership(user, itemId);
 
-        s3Service.uploadFile(itemId, file);
-        log.info("File uploaded for item {} by user {}", itemId, AuthenticationUtil.getCurrentUserId());
+        s3Service.uploadFile(item, file);
+        log.info("File uploaded for item {} by user {}", itemId, user.getID());
         return ResponseEntity.ok("File uploaded successfully");
+    }
+
+    /**
+     * Confirm a presigned URL upload completed successfully.
+     * This saves the image record to the database after client-side upload.
+     * Only the item owner can confirm uploads.
+     *
+     * @param itemId The ID of the item
+     * @param objectKey The S3 object key that was uploaded
+     * @param contentType The content type of the uploaded file
+     * @return Success message
+     */
+    @PostMapping("/confirm-upload")
+    public ResponseEntity<String> confirmUpload(
+            @AuthenticationPrincipal User user,
+            @RequestParam("itemId") @NotNull Long itemId,
+            @RequestParam("objectKey") @NotBlank String objectKey,
+            @RequestParam("contentType") @NotBlank String contentType) {
+
+        // Verify user owns the item and get the item
+        Item item = getItemAndVerifyOwnership(user, itemId);
+
+        s3Service.confirmPresignedUpload(item, objectKey, contentType);
+        log.info("Upload confirmed for item {} by user {}", itemId, user.getID());
+        return ResponseEntity.ok("Upload confirmed successfully");
     }
 
     /**
@@ -98,25 +126,40 @@ public class ImageController {
      * @return Success message
      */
     @DeleteMapping("/{itemId}")
-    public ResponseEntity<String> deleteItemImages(@PathVariable Long itemId) {
+    public ResponseEntity<String> deleteItemImages( @AuthenticationPrincipal User user,
+            @PathVariable Long itemId ) {
 
         // Verify user owns the item
-        verifyItemOwnership(itemId);
+        verifyItemOwnership(user, itemId);
 
         s3Service.deleteItemImages(itemId);
-        log.info("Images deleted for item {} by user {}", itemId, AuthenticationUtil.getCurrentUserId());
+        log.info("Images deleted for item {} by user {}", itemId, user.getID());
         return ResponseEntity.ok("Images deleted successfully");
     }
 
     /**
      * Verify that the current user owns the specified item.
      *
+     * @param user The authenticated user
      * @param itemId The item ID to check
      * @throws EntityNotFoundException if item doesn't exist
      * @throws AccessDeniedException if user doesn't own the item
      */
-    private void verifyItemOwnership(Long itemId) {
-        Long userId = AuthenticationUtil.getCurrentUserId();
+    private void verifyItemOwnership(User user, Long itemId) {
+        getItemAndVerifyOwnership(user, itemId);
+    }
+
+    /**
+     * Get item and verify that the current user owns it.
+     *
+     * @param user The authenticated user
+     * @param itemId The item ID to check
+     * @return The item if owned by current user
+     * @throws EntityNotFoundException if item doesn't exist
+     * @throws AccessDeniedException if user doesn't own the item
+     */
+    private Item getItemAndVerifyOwnership(User user, Long itemId) {
+        Long userId = user.getID();
 
         Item item = itemRepository.findItemById(itemId)
                 .orElseThrow(() -> new EntityNotFoundException("Item not found: " + itemId));
@@ -126,5 +169,7 @@ public class ImageController {
                     userId, itemId, item.getUser().getID());
             throw new AccessDeniedException("You do not have permission to modify images for this item");
         }
+
+        return item;
     }
 }
