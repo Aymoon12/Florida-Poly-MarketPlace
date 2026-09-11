@@ -33,3 +33,20 @@ build/
 .vscode/
 
 /src/main/resources/application.yaml
+
+### Secrets & local config — never commit ###
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+**/application-local.yaml
+**/application-secrets.yaml
+
+### Dependencies ###
+node_modules/
+
+### Windows stray artifacts ###
+nul
