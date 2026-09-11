@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.iml
+*.iws
+*.ipr
+
+# Build artifacts
+target/
+build/
+
+# Maven wrapper (will be re-downloaded)
+.mvn/wrapper/maven-wrapper.jar
+
+# Environment files
+.env
+.env.*
+!.env.docker
+
+# Documentation
+*.md
+!README.md
+
+# Frontend (built separately)
+frontend/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

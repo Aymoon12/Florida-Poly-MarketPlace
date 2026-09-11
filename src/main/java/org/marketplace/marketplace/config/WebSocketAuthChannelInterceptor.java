@@ -16,8 +16,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 /**
- * Channel interceptor that authenticates WebSocket connections using JWT.
- * Validates the JWT token sent in the Authorization header during STOMP CONNECT.
+ * Channel interceptor that authenticates WebSocket connections.
+ * Prefers authentication from HTTP handshake (cookie-based),
+ * with fallback to Authorization header for backwards compatibility.
  */
 @Component
 @RequiredArgsConstructor
@@ -33,7 +34,18 @@ public class WebSocketAuthChannelInterceptor implements ChannelInterceptor {
 		StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor( message, StompHeaderAccessor.class );
 
 		if ( accessor != null && StompCommand.CONNECT.equals( accessor.getCommand() ) ) {
-			// Extract JWT token from Authorization header
+			// First, try to get authentication from handshake attributes (cookie-based)
+			Object authFromHandshake = accessor.getSessionAttributes() != null
+					? accessor.getSessionAttributes().get( WebSocketHandshakeInterceptor.USER_ATTRIBUTE )
+					: null;
+
+			if ( authFromHandshake instanceof UsernamePasswordAuthenticationToken authToken ) {
+				accessor.setUser( authToken );
+				log.debug( "WebSocket authenticated via cookie for user: {}", authToken.getName() );
+				return message;
+			}
+
+			// Fallback: Extract JWT token from Authorization header (backwards compatibility)
 			String authHeader = accessor.getFirstNativeHeader( "Authorization" );
 
 			if ( authHeader != null && authHeader.startsWith( "Bearer " ) ) {
@@ -49,7 +61,7 @@ public class WebSocketAuthChannelInterceptor implements ChannelInterceptor {
 							UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
 									userDetails, null, userDetails.getAuthorities() );
 							accessor.setUser( authToken );
-							log.debug( "WebSocket authenticated for user: {}", username );
+							log.debug( "WebSocket authenticated via header for user: {}", username );
 						} else {
 							log.warn( "WebSocket JWT validation failed for user: {}", username );
 						}
@@ -58,7 +70,7 @@ public class WebSocketAuthChannelInterceptor implements ChannelInterceptor {
 					log.error( "WebSocket authentication error: {}", e.getMessage() );
 				}
 			} else {
-				log.warn( "WebSocket connection attempted without Authorization header" );
+				log.warn( "WebSocket connection attempted without authentication" );
 			}
 		}
 

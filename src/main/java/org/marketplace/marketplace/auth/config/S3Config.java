@@ -1,5 +1,6 @@
 package org.marketplace.marketplace.auth.config;
 
+import com.amazonaws.client.builder.AwsClientBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,12 +23,27 @@ public class S3Config {
 	@Value( "${aws.s3.region:us-east-2}" )
 	private String region;
 
+	@Value("${aws.s3.endpoint:}")
+	private String endpoint;
+
 	@Bean
 	public AmazonS3 amazonS3Client() {
 
 		BasicAWSCredentials awsCreds = new BasicAWSCredentials( accessKey, secretKey );
+		AmazonS3ClientBuilder builder = AmazonS3ClientBuilder.standard()
+											.withCredentials(new AWSStaticCredentialsProvider(awsCreds))
+											.withPathStyleAccessEnabled(true);  // Required for Supabase
 
-		return AmazonS3ClientBuilder.standard().withRegion( Regions.fromName( region ) )
-				.withCredentials( new AWSStaticCredentialsProvider( awsCreds ) ).build();
+		if (endpoint != null && !endpoint.isEmpty()) {
+			// Use custom endpoint for Supabase
+			builder.withEndpointConfiguration(
+				new AwsClientBuilder.EndpointConfiguration(endpoint, region)
+			);
+		} else {
+			// Fall back to standard AWS
+			builder.withRegion(region);
+		}
+
+		return builder.build();
 	}
 }

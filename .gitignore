@@ -32,7 +32,16 @@ build/
 ### VS Code ###
 .vscode/
 
-/src/main/resources/application.yaml
+# Local config files with secrets (use application.yaml template with env vars)
+application-local.yaml
+application-dev.yaml
+
+.env
+.env.docker
+
+### Node ###
+node_modules/
+*.log
 
 ### Secrets & local config — never commit ###
 .env

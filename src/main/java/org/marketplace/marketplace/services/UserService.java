@@ -5,11 +5,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 import org.marketplace.marketplace.dto.DashboardDto;
-import org.marketplace.marketplace.entities.Item;
-import org.marketplace.marketplace.entities.Sale;
-import org.marketplace.marketplace.entities.Status;
-import org.marketplace.marketplace.entities.User;
-import org.marketplace.marketplace.entities.ViewHistory;
+import org.marketplace.marketplace.entities.*;
 import org.marketplace.marketplace.repository.ItemRepository;
 import org.marketplace.marketplace.repository.SaleRepository;
 import org.marketplace.marketplace.repository.UserRepository;
@@ -85,7 +81,7 @@ public class UserService {
 					.orElseThrow( () -> new RuntimeException( "Error finding Active Items." ) );
 
 			final var activeListingsNum = activeListings.size();
-			activeListings.stream().limit( 5 );
+			activeListings = activeListings.stream().limit( 5 ).toList();
 			return DashboardDto.builder().totalSales( totalSales ).totalPurchases( totalPurchases )
 					.activeListings( activeListingsNum ).mySelling( s3Service.getItemDtos( activeListings ) )
 					.recentActivity( recentActivity ).build();

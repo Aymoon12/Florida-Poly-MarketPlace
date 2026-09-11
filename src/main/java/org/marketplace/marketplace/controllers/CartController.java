@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.marketplace.marketplace.dto.CartItemDto;
+import org.marketplace.marketplace.entities.User;
 import org.marketplace.marketplace.services.CartService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,46 +28,37 @@ import lombok.RequiredArgsConstructor;
 public class CartController {
 
     private final CartService cartService;
-    
+
     @GetMapping
-    public ResponseEntity<List<CartItemDto>> getCartItems(@RequestParam final Long userId) {
-        return ResponseEntity.ok(cartService.getCartItems(userId));
+    public ResponseEntity<List<CartItemDto>> getCartItems( @AuthenticationPrincipal User user ) {
+        return ResponseEntity.ok(cartService.getCartItems(user.getID()));
     }
-    
+
     @PostMapping("/add")
     public ResponseEntity<CartItemDto> addToCart(
-            @RequestParam final Long userId,
+            @AuthenticationPrincipal User user,
             @RequestParam final Long itemId,
             @RequestParam(defaultValue = "1") final int quantity) {
-        
-        try {
-            CartItemDto cartItem = cartService.addItemToCart(userId, itemId, quantity);
-            return ResponseEntity.ok(cartItem);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+
+        CartItemDto cartItem = cartService.addItemToCart(user.getID(), itemId, quantity);
+        return ResponseEntity.ok(cartItem);
     }
-    
+
     @PutMapping("/{cartItemId}")
     public ResponseEntity<CartItemDto> updateCartItem(
-            @RequestParam final Long userId,
+            @AuthenticationPrincipal User user,
             @PathVariable final Long cartItemId,
             @RequestParam final int quantity) {
-        
-        try {
-            CartItemDto cartItem = cartService.updateCartItem(userId, cartItemId, quantity);
-            return ResponseEntity.ok(cartItem);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+
+        CartItemDto cartItem = cartService.updateCartItem(user.getID(), cartItemId, quantity);
+        return ResponseEntity.ok(cartItem);
     }
-    
+
     @DeleteMapping("/{cartItemId}")
-    public ResponseEntity<?> removeCartItem(
-            @RequestParam final Long userId,
-            @PathVariable final Long cartItemId) {
-        
-        boolean removed = cartService.removeCartItem(userId, cartItemId);
+    public ResponseEntity<?> removeCartItem( @AuthenticationPrincipal User user,
+            @PathVariable final Long cartItemId ) {
+
+        boolean removed = cartService.removeCartItem(user.getID(), cartItemId);
         if (removed) {
             Map<String, String> response = new HashMap<>();
             response.put("message", "Item removed from cart");
@@ -74,10 +67,10 @@ public class CartController {
             return ResponseEntity.badRequest().build();
         }
     }
-    
+
     @DeleteMapping("/clear")
-    public ResponseEntity<?> clearCart(@RequestParam final Long userId) {
-        boolean cleared = cartService.clearCart(userId);
+    public ResponseEntity<?> clearCart( @AuthenticationPrincipal User user ) {
+        boolean cleared = cartService.clearCart(user.getID());
         if (cleared) {
             Map<String, String> response = new HashMap<>();
             response.put("message", "Cart cleared successfully");
@@ -86,12 +79,12 @@ public class CartController {
             return ResponseEntity.badRequest().build();
         }
     }
-    
+
     @GetMapping("/count")
-    public ResponseEntity<?> getCartItemCount(@RequestParam final Long userId) {
-        long count = cartService.getCartItemCount(userId);
+    public ResponseEntity<?> getCartItemCount( @AuthenticationPrincipal User user ) {
+        long count = cartService.getCartItemCount(user.getID());
         Map<String, Long> response = new HashMap<>();
         response.put("count", count);
         return ResponseEntity.ok(response);
     }
-} 
+}

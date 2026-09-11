@@ -26,6 +26,4 @@ public class ItemRequest implements Serializable {
 	@NotBlank( message = "Category is required" )
 	private final String category;
 
-	@NotBlank( message = "User ID is required" )
-	private final String userId;
 }
